@@ -847,6 +847,7 @@ function computeNewRow() {
 
     let nextLeftMinY = rowMinY;
     let nextRightMinY = rowMinY;
+    let j = 0;
     while (true) {
       console.log("Find starting Y");
       let foundLeftMinY = false;
@@ -921,13 +922,14 @@ function computeNewRow() {
           width: rowRightVerticalSegment.x1 - rowLeftVerticalSegment.x1,
           height: maxY - minY,
           boards: [],
-          row: row
+          row: row,
+          segmentNumber: j + 1
         });
         nextLeftMinY = maxY + 1;
         nextRightMinY = nextLeftMinY;
       }
+      j++;
     }
-
   }
 
   if (row.segments.length > 0) {
@@ -981,6 +983,22 @@ function findMaxBoardNumber() {
   return maxBoardNumber;
 }
 
+function findMinimalCutBoard(cut) {
+  let minimalCutBoard = null;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.remainings.length; j++) {
+      const remaining = row.remainings[j];
+      if (remaining.cut === cut && remaining.canBeUsed) {
+        if (minimalCutBoard == null || (remaining.height < minimalCutBoard.height) {
+          minimalCutBoard = remaining;
+        }
+      }
+    }
+  }
+  return minimalCutBoard;
+}
+
 function computeNewBoard() {
   console.log("Find last not completed row and segment")
   if (rows.length === 0) {
@@ -1004,48 +1022,23 @@ function computeNewBoard() {
         reused: false
       });
     }
-  }
-
-  if (arrangeMode.value === 'continue') {
-    let minRemaningCutLeft = findMinimalCutBoardFromRight();
-    if (lastBoard.remainingBoardHeight > 0) {
-      if (doNotUseSmallRemaningsCheckbox.checked) {
-        if (lastBoard.remainingBoardHeight > minBoardRemainings) {
-          currentBordHeight = lastBoard.remainingBoardHeight;
-        } else {
-          currentBordNumber++;
+  } else {
+    if (lastBoard.segment.remainingBoardHeight === 0) {
+      if (arrangeMode.value === 'continue') {
+        let boardCutByRight = findMinimalCutBoard('right');
+        if (boardCutByRight != null) {
+          currentBordHeight = boardCutByRight.height;
         }
-      } else {
-        currentBordHeight = lastBoard.remainingBoardHeight;
+      } else if (arrangeMode.value === 'halfShift') {
+        // need to find first board endY
       }
     }
-
-
-
-
-
-
-
-
-
-
-  } else if (arrangeMode.value === 'halfShift') {
-    // need to find first board endY
-
-    if (lastBoard.remainingBoardHeight > 0 && lastBoard.remainingBoardHeight > minBoardRemainings) {
-      currentBordHeight = lastBoard.remainingBoardHeight;
-    }
   }
 
-  if (lastBoard != null && lastBoard.remainingBoardHeight > 0) {
-    if (lastBoard.remainingBoardHeight < minBoardRemainings
-      && doNotUseSmallRemaningsCheckbox.checked) {
-      currentBordNumber = lastRow.lastBoardNumber + 1;
-    } else {
-      currentBordNumber = lastBoard.number;
-      currentBordHeight = lastBoard.remainingBoardHeight;
-    }
-  }
+  let lastSegment = lastBoard!= null ? lastBoard.segment : null;
+  let lastRow = lastSegment!= null ? lastSegment.row : null;
+
+
 
   for (let i = 0; i < row.segments.length; i++) {
     let rowSegment = row.segments[i];
