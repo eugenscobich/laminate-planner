@@ -7,7 +7,9 @@ const floorCanvas = document.getElementById('floorCanvas');
 const addRow = document.getElementById('addRow');
 const addBoard = document.getElementById('addBoard');
 const fullComplete = document.getElementById('fullComplete');
-
+const drawGridCheckbox = document.getElementById('drawGridCheckbox');
+const costInput = document.getElementById('costInput');
+const totalCost = document.getElementById('totalCost');
 const heightInput = document.getElementById('heightInput');
 const widthInput = document.getElementById('widthInput');
 const boardOffsetInput = document.getElementById('boardOffsetInput');
@@ -15,11 +17,18 @@ const boardOffsetValue = document.getElementById('boardOffsetValue');
 const boardInitialCutInput = document.getElementById('boardInitialCutInput');
 const boardInitialCutValue = document.getElementById('boardInitialCutValue');
 const showNumbersCheckbox = document.getElementById('showNumbersCheckbox');
+const customArrangeHeight = document.getElementById('customArrangeHeight');
+const customArrangeHeightValue = document.getElementById('customArrangeHeightValue');
+
+
 const doNotUseSmallRemaningsCheckbox = document.getElementById(
-  'doNotUseSmallRemaningsCheckbox');
+    'doNotUseSmallRemaningsCheckbox');
 const minBoardRemainingsInput = document.getElementById(
-  'minBoardRemainingsInput');
-const remainingsValue = document.getElementById('remainingsValue');
+    'minBoardRemainingsInput');
+const totalNumberOfBoards = document.getElementById('totalNumberOfBoards');
+const totalFloorSquare = document.getElementById('totalFloorSquare');
+const totalSquareOfBoards = document.getElementById('totalSquareOfBoards');
+const totalRemainingSquare = document.getElementById('totalRemainingSquare');
 const optimyseStartTheRow = document.getElementById('optimyseStartTheRow');
 
 const fileTypeSelect = document.getElementById('fileTypeSelect');
@@ -85,7 +94,7 @@ function loadSVGFile(file) {
         const viewBox = svgElement.getAttribute('viewBox');
         if (viewBox) {
           const viewBoxValues = viewBox.trim().split(/\s+|,/).map(
-            v => parseFloat(v));
+              v => parseFloat(v));
           if (viewBoxValues.length === 4) {
             svgWidth = viewBoxValues[2];
             svgHeight = viewBoxValues[3];
@@ -195,7 +204,7 @@ function extractLinesFromSVG(svgElement) {
         const pathLines = extractLinesFromPath(node.getAttribute('d'));
         lines = lines.concat(pathLines);
         break;
-      // Add cases for other SVG elements if needed
+        // Add cases for other SVG elements if needed
     }
 
     // Recurse into child nodes
@@ -278,7 +287,7 @@ function extractLinesFromPath(d) {
         x = subpathStartX;
         y = subpathStartY;
         break;
-      // Add cases for other path commands if needed
+        // Add cases for other path commands if needed
       default:
         // Ignoring curves and other commands for simplicity
         break;
@@ -324,9 +333,9 @@ function loadDXFFile(file) {
 
       // Center the drawing
       panOffset.x = -extents.minX * scale + (canvasWidth - drawingWidth * scale)
-        / 2;
+          / 2;
       panOffset.y = -extents.minY * scale + (canvasHeight - drawingHeight
-        * scale) / 2;
+          * scale) / 2;
 
       isFloorPlanLoaded = true;
       selectedCorner = null; // Reset selected corner
@@ -381,7 +390,7 @@ function extractLinesFromDXF(entities) {
           });
         }
         break;
-      // Add cases for other DXF entities if needed
+        // Add cases for other DXF entities if needed
     }
   });
 
@@ -437,7 +446,7 @@ function getDxfExtents(dxf) {
   });
 
   if (minX === Infinity || minY === Infinity || maxX === -Infinity || maxY
-    === -Infinity) {
+      === -Infinity) {
     console.error('No valid entities found to calculate extents.');
     return null;
   }
@@ -470,7 +479,7 @@ function getEntityBoundingBox(entity) {
         };
       }
       break;
-    // Add cases for other DXF entities if needed
+      // Add cases for other DXF entities if needed
     default:
       return null;
   }
@@ -534,15 +543,21 @@ function drawCanvas() {
     ctx.beginPath();
     ctx.fillStyle = 'red';
     ctx.arc(
-      selectedCorner.x * scale,
-      floorCanvas.height - selectedCorner.y * scale,
-      5,
-      0,
-      2 * Math.PI
+        selectedCorner.x * scale,
+        floorCanvas.height - selectedCorner.y * scale,
+        5,
+        0,
+        2 * Math.PI
     );
     ctx.fill();
     ctx.restore();
   }
+
+
+  if (drawGridCheckbox.checked) {
+    drawGrid();
+  }
+
 }
 
 // Function to render floor plan lines
@@ -578,6 +593,8 @@ floorCanvas.addEventListener('wheel', function (e) {
   scale = newScale;
   drawCanvas();
 });
+
+drawGridCheckbox.addEventListener('change', drawCanvas);
 
 // Panning
 floorCanvas.addEventListener('mousedown', function (e) {
@@ -646,23 +663,111 @@ let boardInitialCut = 0;
 let boardNumber = 1;
 let rows = [];
 let remainingBoards = [];
+let thirdShiftDirection = null;
 
 boardOffsetInput.addEventListener('input', () => {
-  boardOffsetValue.textContent = boardOffsetInput.value;
-  reset();
-  fullComplete();
+  updateBoardOffsetInput();
 })
 
+function updateBoardOffsetInput() {
+  boardOffsetValue.textContent = boardOffsetInput.value;
+  reset();
+  completeTheFloor();
+}
+
+boardOffsetInput.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  const step = 1;
+  let currentValue = parseFloat(boardOffsetInput.value) || 0;
+  const minValue = parseFloat(boardOffsetInput.min) || -Infinity;
+  const maxValue = parseFloat(boardOffsetInput.max) || Infinity;
+
+  if (e.deltaY < 0) {
+    currentValue += step;
+    if (currentValue > maxValue) {
+      currentValue = maxValue;
+    }
+  } else {
+    currentValue -= step;
+    if (currentValue < minValue) {
+      currentValue = minValue;
+    }
+  }
+  boardOffsetInput.value = currentValue;
+
+  updateBoardOffsetInput();
+});
+
 boardInitialCutInput.addEventListener('input', () => {
+  updateBoardInitialCutInput();
+})
+
+function updateBoardInitialCutInput() {
   boardInitialCutValue.textContent = boardInitialCutInput.value;
   reset();
-  fullComplete();
-})
+  completeTheFloor();
+}
+
+boardInitialCutInput.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  const step = 1;
+  let currentValue = parseFloat(boardInitialCutInput.value) || 0;
+  const minValue = parseFloat(boardInitialCutInput.min) || -Infinity;
+  const maxValue = parseFloat(boardInitialCutInput.max) || Infinity;
+
+  if (e.deltaY < 0) {
+    currentValue += step;
+    if (currentValue > maxValue) {
+      currentValue = maxValue;
+    }
+  } else {
+    currentValue -= step;
+    if (currentValue < minValue) {
+      currentValue = minValue;
+    }
+  }
+  boardInitialCutInput.value = currentValue;
+
+  updateBoardInitialCutInput();
+});
+
+customArrangeHeight.addEventListener('input', function () {
+  updateCustomArrangeHeight();
+});
+
+function updateCustomArrangeHeight() {
+  customArrangeHeightValue.textContent = customArrangeHeight.value;
+  reset();
+  completeTheFloor();
+}
+
+customArrangeHeight.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  const step = 1;
+  let currentValue = parseFloat(customArrangeHeight.value) || 0;
+  const minValue = parseFloat(customArrangeHeight.min) || -Infinity;
+  const maxValue = parseFloat(customArrangeHeight.max) || Infinity;
+
+  if (e.deltaY < 0) {
+    currentValue += step;
+    if (currentValue > maxValue) {
+      currentValue = maxValue;
+    }
+  } else {
+    currentValue -= step;
+    if (currentValue < minValue) {
+      currentValue = minValue;
+    }
+  }
+  customArrangeHeight.value = currentValue;
+
+  updateCustomArrangeHeight();
+});
 
 heightInput.addEventListener('change', () => {
   boardInitialCutInput.min = heightInput.value * -1;
   reset();
-  fullComplete();
+  completeTheFloor();
 })
 
 widthInput.addEventListener('change', () => {
@@ -701,6 +806,11 @@ optimyseStartTheRow.addEventListener('change', function () {
   completeTheFloor();
 });
 
+arrangeMode.addEventListener('change', function () {
+  reset();
+  completeTheFloor();
+});
+
 // Load Floor Plan File
 loadFileButton.addEventListener('click', () => {
   const file = fileInput.files[0];
@@ -714,23 +824,21 @@ loadFileButton.addEventListener('click', () => {
   if (floorPlanType === 'svg' && file.type === 'image/svg+xml') {
     loadSVGFile(file);
   } else if (floorPlanType === 'dxf' && (file.name.endsWith('.dxf') || file.type
-    === 'application/dxf' || file.type === 'application/octet-stream')) {
+      === 'application/dxf' || file.type === 'application/octet-stream')) {
     loadDXFFile(file);
   } else {
     alert(`Please select a valid ${floorPlanType.toUpperCase()} file.`);
   }
   reset();
+});
+
+function reset() {
+  rows = [];
   boardHeight = parseFloat(heightInput.value);
   boardWidth = parseFloat(widthInput.value);
   boardOffset = parseFloat(boardOffsetInput.value);
   boardInitialCut = parseFloat(boardInitialCutInput.value);
   minBoardRemainings = parseFloat(minBoardRemainingsInput.value);
-
-});
-
-function reset() {
-  rows = [];
-  remainingBoards = [];
 }
 
 function validate() {
@@ -749,21 +857,28 @@ function completeTheFloor() {
     }
   }
 
-  updateRemainings();
+  while (true) {
+    const addedBoard = computeNewBoard();
+    if (!addedBoard) {
+      break;
+    }
+  }
+
+  updateStatistics();
   drawCanvas();
 }
 
 function computeRow() {
   validate();
   computeNewRow();
-  updateRemainings();
+  updateStatistics();
   drawCanvas();
 }
 
 function computeBord() {
   validate();
   computeNewBoard();
-  updateRemainings();
+  updateStatistics();
   drawCanvas();
 }
 
@@ -795,13 +910,13 @@ function computeNewRow() {
     const rightSegmentIntersectionPoints = [];
     for (let i = 0; i < floorPlanLines.length; i++) {
       const leftSegmentIntersectionPoint = getLineIntersection(
-        floorPlanLines[i], rowLeftVerticalSegment);
+          floorPlanLines[i], rowLeftVerticalSegment);
       if (leftSegmentIntersectionPoint != null) {
         leftSegmentIntersectionPoints.push(leftSegmentIntersectionPoint);
       }
 
       const rightSegmentIntersectionPoint = getLineIntersection(
-        floorPlanLines[i], rowRightVerticalSegment);
+          floorPlanLines[i], rowRightVerticalSegment);
       if (rightSegmentIntersectionPoint != null) {
         rightSegmentIntersectionPoints.push(rightSegmentIntersectionPoint);
       }
@@ -821,7 +936,7 @@ function computeNewRow() {
     let rowLeftMaxY = null;
     let rowRightMaxY = null;
     if (leftSegmentIntersectionPoints.length > 0
-      && rightSegmentIntersectionPoints.length > 0) {
+        && rightSegmentIntersectionPoints.length > 0) {
       rowLeftMinY = leftSegmentIntersectionPoints[0].y;
       rowRightMinY = rightSegmentIntersectionPoints[0].y;
       rowMinY = Math.min(rowLeftMinY, rowRightMinY);
@@ -843,14 +958,14 @@ function computeNewRow() {
       - 1].y;
       rowMaxY = rowRightMaxY;
     } else {
-      console.log("Could not indetify minY/maxY");
+      //console.log("Could not indetify minY/maxY");
     }
 
     let nextLeftMinY = rowMinY;
     let nextRightMinY = rowMinY;
     let j = 0;
     while (true) {
-      console.log("Find starting Y");
+      //console.log("Find starting Y");
       let foundLeftMinY = false;
       for (let i = 0; i < leftSegmentIntersectionPoints.length; i++) {
         if (leftSegmentIntersectionPoints[i].y >= nextLeftMinY) {
@@ -877,7 +992,7 @@ function computeNewRow() {
         maxY = null;
       }
 
-      console.log("Find end of segment");
+      //console.log("Find end of segment");
       let nextLeftMaxY = rowMaxY + 1;
       let foundLeftMaxY = false;
       for (let i = 0; i < leftSegmentIntersectionPoints.length; i++) {
@@ -914,7 +1029,7 @@ function computeNewRow() {
       }
 
       if (nextLeftMaxY === rowMaxY + 1 && nextRightMaxY === rowMaxY + 1) {
-        console.log("maxY wasn't found");
+        //console.log("maxY wasn't found");
         break;
       } else {
         row.segments.push({
@@ -943,23 +1058,13 @@ function computeNewRow() {
 
 }
 
-function findLastBoard() {
+function findAvailableSegment() {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     for (let j = 0; j < row.segments.length; j++) {
       const segment = row.segments[j];
       if (segment.remainingHeight > 0) {
-        if (segment.boards.length > 0) {
-          return segment.boards[segment.boards.length - 1];
-        } else {
-          if (j > 0) {
-            return row.segments[j - 1].boards[row.segments[j - 1].boards.length - 1];
-          } else if (i > 0) {
-            return rows[i - 1].segments[rows[i - 1].segments.length - 1].boards[rows[i - 1].segments[rows[i - 1].segments.length - 1].boards.length - 1];
-          } else {
-            return null;
-          }
-        }
+        return segment;
       }
     }
   }
@@ -980,6 +1085,35 @@ function findMaxBoardNumber() {
   return maxBoardNumber;
 }
 
+function calculateTotalFloorSquare() {
+  let totalSquare = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.segments.length; j++) {
+      const segment = row.segments[j];
+      for (let k = 0; k < segment.boards.length; k++) {
+        const board = segment.boards[k];
+        totalSquare += board.height * board.width;
+      }
+    }
+  }
+  return Math.round(totalSquare * 0.0001) / 100;
+}
+
+function calculateTotalRemainingSquare() {
+  let totalSquare = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.remainings.length; j++) {
+      const remaining = row.remainings[j];
+      if (!remaining.reused || remaining.cut ==='both') {
+        totalSquare += remaining.height * row.segments[0].width;
+      }
+    }
+  }
+  return Math.round(totalSquare * 0.0001) / 100;
+}
+
 function findMinimalCutBoard(cut) {
   let minimalCutBoard = null;
   for (let i = 0; i < rows.length; i++) {
@@ -988,7 +1122,9 @@ function findMinimalCutBoard(cut) {
       const remaining = row.remainings[j];
       if (remaining.cut === cut && !remaining.reused) {
         if (minimalCutBoard == null || remaining.height < minimalCutBoard.height) {
-          minimalCutBoard = remaining;
+          if (!doNotUseSmallRemaningsCheckbox.checked || remaining.height > minBoardRemainings) {
+            minimalCutBoard = remaining
+          }
         }
       }
     }
@@ -996,99 +1132,255 @@ function findMinimalCutBoard(cut) {
   return minimalCutBoard;
 }
 
+function findBoardToReuse(cut, height) {
+  let remainings = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.remainings.length; j++) {
+      const remaining = row.remainings[j];
+      if (remaining.cut === cut && !remaining.reused) {
+        remainings.push(remaining);
+      }
+    }
+  }
+  remainings.sort((a, b) => {
+    a.height - b.height
+  });
+  for (let i = 0; i < remainings.length; i++) {
+    const remaining = remainings[i];
+    if (remaining.height >= height) {
+      return remaining;
+    }
+  }
+  return null;
+}
+
+function findNearBoardEndY(firstBoardEndY, currentBoardEndY) {
+  if (firstBoardEndY < currentBoardEndY) {
+    while (true) {
+      if (firstBoardEndY < currentBoardEndY) {
+        firstBoardEndY += boardHeight;
+      } else {
+        firstBoardEndY -= boardHeight;
+        break;
+      }
+    }
+  } else if (firstBoardEndY > currentBoardEndY) {
+    while (true) {
+      if (firstBoardEndY > currentBoardEndY) {
+        firstBoardEndY -= boardHeight;
+      } else {
+        break;
+      }
+    }
+  }
+  return firstBoardEndY;
+}
+function findPreviousBoardEndY(currentEndY, row) {
+  for (let j = 0; j < row.segments.length; j++) {
+    const segment = row.segments[j];
+    for (let k = 0; k < segment.boards.length; k++) {
+      const board = segment.boards[k];
+      if (board.y + board.height >= currentEndY) {
+        return board.y + board.height;
+      }
+    }
+  }
+}
+
 function computeNewBoard() {
-  console.log("Find last not completed row and segment")
+  //console.log("Find last not completed row and segment")
   if (rows.length === 0) {
     alert('Please add at least one row.');
     throw new Error('Please add at least one row.');
   }
 
-  const lastBoard = findLastBoard();
+  const availableSegment = findAvailableSegment();
+  // Calculate Bord Height that need to be added
   let currentBordHeight = boardHeight;
   let currentBordNumber = findMaxBoardNumber() + 1;
-  if (lastBoard == null) {
-    console.log("There is no boards. Add first one");
-    // add first board ever
-    if (boardInitialCut < 0) {
-      // need to cut first board
-      currentBordHeight = boardHeight + boardInitialCut;
-      rows[0].remainings.push({
-        height: -boardInitialCut,
-        number: 1,
-        cut: 'right',
-        reused: false
-      });
-    }
+  if (availableSegment == null) {
+    //console.log("There is no available Segments to add board");
+    return false;
   } else {
-    if (lastBoard.segment.remainingHeight === 0) {
-      if (arrangeMode.value === 'continue') {
-        let boardCutByRight = findMinimalCutBoard('left');
-        if (boardCutByRight != null) {
-          currentBordHeight = boardCutByRight.height;
-          currentBordNumber = boardCutByRight.number;
-          boardCutByRight.reused = true;
+    if (availableSegment.number === 1 && availableSegment.row.number === 1 && availableSegment.boards.length === 0) {
+      // This is first segment
+      //console.log("Found first segment which is empty. Add first board ever");
+      if (boardInitialCut < 0) {
+        // need to cut first board
+        currentBordHeight = boardHeight + boardInitialCut;
+        if (doNotUseSmallRemaningsCheckbox.checked && currentBordHeight < minBoardRemainings) {
+          currentBordHeight = minBoardRemainings;
         }
-      } else if (arrangeMode.value === 'halfShift') {
-        // need to find first board endY
-      }
-    }
-  }
-
-  let lastSegment = lastBoard != null ? lastBoard.segment : null;
-  let lastRow = lastSegment != null ? lastSegment.row : null;
-
-  // identify the segment where to add the board
-  let currentSegment = null;
-  let currentRow = null;
-  if (lastSegment != null) {
-      if (lastSegment.remainingHeight > 0) {
-        currentSegment = lastSegment;
-        currentRow = lastRow;
-      } else {
-        if (lastSegment.number < lastRow.segments.length) {
-            currentSegment = lastRow.segments[lastSegment.number];
-            currentRow = lastRow;
-        } else {
-            if (lastRow.number < rows.length) {
-                currentRow = rows[lastRow.number];
-                currentSegment = currentRow.segments[0];
-            } else {
-               console.log("No more rows where to add board");
-               return false;
-            }
-        }
-      }
-  } else {
-    currentRow = rows[0];
-    currentSegment = currentRow.segments[0];
-  }
-
-  if (currentSegment.remainingHeight >= currentBordHeight) {
-        currentSegment.boards.push({
-          x: currentSegment.x,
-          y: currentSegment.y + currentSegment.height - currentSegment.remainingHeight,
-          width: currentSegment.width,
-          height: currentBordHeight,
-          number: currentBordNumber,
-          remainingHeight: 0,
-          segment: currentSegment
+        rows[0].remainings.push({
+          height: boardHeight - currentBordHeight,
+          number: 1,
+          cut: 'right',
+          reused: false
         });
-        currentSegment.remainingHeight -= currentBordHeight;
-  } else {
-        // need to cut
-      const cutHeight = currentBordHeight - currentSegment.remainingHeight;
-      currentSegment.boards.push({
-        x: currentSegment.x,
-        y: currentSegment.y + currentSegment.height - currentSegment.remainingHeight,
-        width: currentSegment.width,
-        height: currentSegment.remainingHeight,
-        number: currentBordNumber,
-        remainingHeight: 0,
-        segment: currentSegment
-      });
-      currentSegment.remainingHeight = 0;
+      }
+    } else {
+      if (availableSegment.boards.length === 0) {
+        //console.log("Found available segment does not have boards, let see how to add first one");
+        // available segment does not have boards, lets see what can be added at beginning
+        if (arrangeMode.value === 'continue') {
+          let boardCutByRight = findMinimalCutBoard('left');
+          if (boardCutByRight != null) {
+            currentBordHeight = boardCutByRight.height;
+            currentBordNumber = boardCutByRight.number;
+            boardCutByRight.reused = true;
+          }
+        } else if (arrangeMode.value === 'halfShift') {
+          // need to find first board endY
+        } else if (arrangeMode.value === 'thirdShift') {
+          const firstBoard = rows[0].segments[0].boards[0];
+          let firstBoardEndY = firstBoard.y + firstBoard.height;
+          if (availableSegment.row.number % 3 === 1) {
+            // first row
+            let currentBoardEndY = availableSegment.y + currentBordHeight;
+            firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
+            currentBordHeight = firstBoardEndY - availableSegment.y;
+          } else if (availableSegment.row.number % 3 === 2) {
+            // every second row
+            let currentBoardEndY = availableSegment.y + currentBordHeight;
+            firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
+            currentBordHeight = Math.round(firstBoardEndY - availableSegment.y - boardHeight * 0.33);
+            if (currentBordHeight <= 0) {
+              currentBordHeight = Math.round(firstBoardEndY + boardHeight - availableSegment.y - boardHeight * 0.33);
+            }
+          } else if (availableSegment.row.number % 3 === 0) {
+            // every third row
+            let currentBoardEndY = availableSegment.y + currentBordHeight;
+            firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
+            currentBordHeight = Math.round(firstBoardEndY - availableSegment.y - boardHeight * 0.66);
+            if (currentBordHeight <= 0) {
+              currentBordHeight = Math.round(firstBoardEndY + boardHeight - availableSegment.y - boardHeight * 0.66);
+            }
+          }
 
-    currentRow.remainings.push({
+          let boardToReuse = findBoardToReuse('left', currentBordHeight);
+          if (boardToReuse != null) {
+            currentBordNumber = boardToReuse.number;
+            boardToReuse.reused = true;
+
+            if (boardToReuse.height > currentBordHeight) {
+              // need to cut reused board
+              availableSegment.row.remainings.push({
+                height: boardToReuse.height - currentBordHeight,
+                number: boardToReuse.number,
+                cut: 'both',
+                reused: true
+              });
+            }
+          } else {
+            if (boardHeight > currentBordHeight) {
+              // need to cut new board
+              availableSegment.row.remainings.push({
+                height: boardHeight - currentBordHeight,
+                number: currentBordNumber,
+                cut: 'right',
+                reused: false
+              });
+            }
+          }
+        } else if (arrangeMode.value === 'custom') {
+          if (availableSegment.row.number === 1) {
+            let boardCutByRight = findMinimalCutBoard('left');
+            if (boardCutByRight != null) {
+              currentBordHeight = boardCutByRight.height;
+              currentBordNumber = boardCutByRight.number;
+              boardCutByRight.reused = true;
+            }
+          } else {
+            let firstBoard = null;
+            const previousRow = rows[availableSegment.row.number - 2];
+            for (let i = 0; i < previousRow.segments.length; i++) {
+              const previousSegment = previousRow.segments[i];
+              if (previousSegment.y >= availableSegment.y) {
+                firstBoard = previousSegment.boards[0];
+                break;
+              }
+            }
+            if (firstBoard == null) {
+               firstBoard = rows[0].segments[0].boards[0];
+            }
+
+
+
+            let firstBoardEndY = firstBoard.y + firstBoard.height;
+            const delta = parseFloat(customArrangeHeight.value) ;//* (availableSegment.row.number - 1);
+            firstBoardEndY += delta;
+
+
+
+            let currentBoardEndY = availableSegment.y + currentBordHeight;
+            firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
+            currentBordHeight = firstBoardEndY - availableSegment.y;
+
+            currentBordHeight = Math.round(firstBoardEndY - availableSegment.y);
+            if (currentBordHeight <= 0) {
+              currentBordHeight = currentBordHeight + boardHeight;
+            }
+
+            let boardToReuse = findBoardToReuse('left', currentBordHeight);
+            if (boardToReuse != null) {
+              currentBordNumber = boardToReuse.number;
+              boardToReuse.reused = true;
+
+              if (boardToReuse.height > currentBordHeight) {
+                // need to cut reused board
+                availableSegment.row.remainings.push({
+                  height: boardToReuse.height - currentBordHeight,
+                  number: boardToReuse.number,
+                  cut: 'both',
+                  reused: true
+                });
+              }
+            } else {
+              if (boardHeight > currentBordHeight) {
+                // need to cut new board
+                availableSegment.row.remainings.push({
+                  height: boardHeight - currentBordHeight,
+                  number: currentBordNumber,
+                  cut: 'right',
+                  reused: false
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (availableSegment.remainingHeight >= currentBordHeight) {
+    availableSegment.boards.push({
+      x: availableSegment.x,
+      y: availableSegment.y + availableSegment.height
+          - availableSegment.remainingHeight,
+      width: availableSegment.width,
+      height: currentBordHeight,
+      number: currentBordNumber,
+      remainingHeight: 0,
+      segment: availableSegment
+    });
+    availableSegment.remainingHeight -= currentBordHeight;
+  } else {
+    // need to cut
+    const cutHeight = currentBordHeight - availableSegment.remainingHeight;
+    availableSegment.boards.push({
+      x: availableSegment.x,
+      y: availableSegment.y + availableSegment.height
+          - availableSegment.remainingHeight,
+      width: availableSegment.width,
+      height: availableSegment.remainingHeight,
+      number: currentBordNumber,
+      remainingHeight: 0,
+      segment: availableSegment
+    });
+    availableSegment.remainingHeight = 0;
+
+    availableSegment.row.remainings.push({
       height: cutHeight,
       number: currentBordNumber,
       cut: 'left',
@@ -1096,190 +1388,100 @@ function computeNewBoard() {
     });
 
   }
-
-/*
-  for (let i = 0; i < row.segments.length; i++) {
-    let rowSegment = row.segments[i];
-    let previousBoardY = rowSegment.y;
-    let remainingRowSegmentHeight = rowSegment.height;
-    let j = 0;
-    while (true) {
-
-      if (optimyseStartTheRow.checked && lastRow != null && i == 0) {
-        console.log('Find the board which ends araund the board I want to add');
-
-        let previousRowFirstBoard = lastRow.segments[0].boards[0];
-        let boardEndY = previousRowFirstBoard.y + previousRowFirstBoard.height;
-        let currentBoardEndY = previousBoardY + currentBordHeight;
-
-        // need to cut
-        let offset = boardEndY - boardHeight * 0.33;
-        let cutValue = previousBoardY + currentBordHeight - offset;
-        if (cutValue > 0) {
-          if (currentBordHeight - cutValue >= minBoardRemainings) {
-            remainingBoards.push({
-              height: cutValue,
-              number: currentBordNumber,
-              cut: currentBordHeight == boardHeight ? 'left' : 'both',
-              reused: currentBordHeight == boardHeight ? false : true
-            });
-            currentBordHeight = currentBordHeight - cutValue;
-          } else {
-            remainingBoards.push({
-              height: currentBordHeight,
-              number: currentBordNumber,
-              cut: 'left',
-              reused: false
-            });
-            currentBordNumber++;
-            currentBordHeight = boardHeight + boardInitialCut;
-          }
-        }
-      }
-
-      if (remainingRowSegmentHeight >= currentBordHeight) {
-        if (j == 0) {
-          console.log('Let reuse remainingBoards');
-          remainingBoards.sort(function (a, b) {
-            return a.height - b.height
-          });
-          for (let k = 0; k < remainingBoards.length; k++) {
-            let remaningBoard = remainingBoards[k];
-            if (remaningBoard.reused == false && remaningBoard.cut == 'right'
-              && remaningBoard.height >= currentBordHeight) {
-              remaningBoard.reused = true;
-              remaningBoard.height = remaningBoard.height
-                - currentBordHeight;
-              rowSegment.boards.push({
-                x: rowSegment.x,
-                y: previousBoardY,
-                width: rowSegment.width,
-                height: currentBordHeight,
-                number: remaningBoard.number,
-                remainingBoardHeight: 0
-              });
-              previousBoardY = previousBoardY + currentBordHeight;
-              remainingRowSegmentHeight = remainingRowSegmentHeight
-                - currentBordHeight;
-              currentBordHeight = boardHeight;
-              break
-            }
-          }
-        } else {
-          rowSegment.boards.push({
-            x: rowSegment.x,
-            y: previousBoardY,
-            width: rowSegment.width,
-            height: currentBordHeight,
-            number: currentBordNumber,
-            remainingBoardHeight: 0
-          });
-          row.lastBoardNumber = currentBordNumber;
-          previousBoardY = previousBoardY + currentBordHeight;
-          remainingRowSegmentHeight = remainingRowSegmentHeight
-            - currentBordHeight;
-          currentBordHeight = boardHeight;
-          currentBordNumber++;
-        }
-      } else {
-
-        console.log('Let reuse remainingBoards first')
-        remainingBoards.sort(function (a, b) {
-          return a.height - b.height
-        });
-        let foundUnused = false;
-        for (let k = 0; k < remainingBoards.length; k++) {
-          let remaningBoard = remainingBoards[k];
-          if (remaningBoard.reused == false
-            && remaningBoard.cut == 'left'
-            && remaningBoard.height >= remainingRowSegmentHeight
-            && j == row.segments.length - 1
-          ) {
-            foundUnused = true;
-            remaningBoard.reused = true;
-            remaningBoard.height = remaningBoard.height
-              - remainingRowSegmentHeight;
-            rowSegment.boards.push({
-              x: rowSegment.x,
-              y: previousBoardY,
-              width: rowSegment.width,
-              height: remainingRowSegmentHeight,
-              number: remaningBoard.number,
-              remainingBoardHeight: 0
-            });
-            previousBoardY = previousBoardY + currentBordHeight;
-            remainingRowSegmentHeight = 0;
-            currentBordHeight = boardHeight;
-            break;
-          }
-        }
-
-        if (!foundUnused) {
-          const remainingBoardHeight = currentBordHeight
-            - remainingRowSegmentHeight;
-          rowSegment.boards.push({
-            x: rowSegment.x,
-            y: previousBoardY,
-            width: rowSegment.width,
-            height: remainingRowSegmentHeight,
-            number: currentBordNumber,
-            remainingBoardHeight: remainingBoardHeight
-          });
-          row.lastBoardNumber = currentBordNumber;
-          currentBordHeight = remainingBoardHeight;
-
-          if (remainingBoardHeight < minBoardRemainings
-            && doNotUseSmallRemaningsCheckbox.checked) {
-            remainingBoards.push({
-              height: remainingBoardHeight,
-              number: currentBordNumber,
-              cut: 'right',
-              reused: false
-            });
-
-            currentBordHeight = boardHeight + boardInitialCut;
-            currentBordNumber++;
-          }
-        }
-        break;
-      }
-      j++;
-    }
-  }
-  */
+  return true;
 }
 
-function updateRemainings() {
-  if (remainingBoards.length > 0) {
-    let remainingBoardsText = "";
-    for (let i = 0; i < remainingBoards.length; i++) {
-      remainingBoardsText = remainingBoardsText + remainingBoards[i].number
-        + "(" + remainingBoards[i].height + "),";
-    }
-    remainingsValue.innerText = remainingBoardsText;
-  }
+function updateStatistics() {
+  let maxNumberOfBoards = findMaxBoardNumber();
+  totalNumberOfBoards.innerText = maxNumberOfBoards;
+  let totalSquareOfBoardsValue = Math.round(maxNumberOfBoards * boardHeight * boardWidth * 0.0001) / 100;
+  totalSquareOfBoards.innerText = totalSquareOfBoardsValue;
+  totalFloorSquare.innerText = calculateTotalFloorSquare();
+  totalRemainingSquare.innerText = calculateTotalRemainingSquare();
+  totalCost.innerText = totalSquareOfBoardsValue * costInput.value;
 }
 
 function findRowDirection() {
   if (selectedCorner.x == floorPlanBounds.minX && selectedCorner.y
-    == floorPlanBounds.minY) {
+      == floorPlanBounds.minY) {
     return 'up';
   }
 
   if (selectedCorner.x == floorPlanBounds.minX && selectedCorner.y
-    == floorPlanBounds.maxY) {
+      == floorPlanBounds.maxY) {
     return 'right';
   }
 
   if (selectedCorner.x == floorPlanBounds.maxX && selectedCorner.y
-    == floorPlanBounds.minY) {
+      == floorPlanBounds.minY) {
     return 'left';
   }
 
   if (selectedCorner.x == floorPlanBounds.maxX && selectedCorner.y
-    == floorPlanBounds.maxY) {
+      == floorPlanBounds.maxY) {
     return 'down';
   }
+}
+
+function drawGrid() {
+  const baseGridSpacing = 100; // Base grid spacing in floor plan units
+  const minGridSpacingPixels = 50; // Minimum grid spacing in screen pixels
+  const maxGridSpacingPixels = 200; // Maximum grid spacing in screen pixels
+  const gridColor = '#e0e0e0'; // Light gray color for the grid lines
+
+  // Calculate grid spacing based on current scale
+  let gridSpacing = baseGridSpacing;
+
+  // Convert grid spacing to screen pixels
+  let gridSpacingPixels = gridSpacing * scale;
+
+  // Adjust grid spacing to maintain a reasonable pixel size
+  while (gridSpacingPixels < minGridSpacingPixels) {
+    gridSpacing *= 2;
+    gridSpacingPixels = gridSpacing * scale;
+  }
+  while (gridSpacingPixels > maxGridSpacingPixels) {
+    gridSpacing /= 2;
+    gridSpacingPixels = gridSpacing * scale;
+  }
+
+  ctx.save();
+  // Apply pan and zoom transformations
+  ctx.translate(panOffset.x, panOffset.y);
+  ctx.scale(scale, -scale); // Flip Y-axis to match coordinate system
+  ctx.translate(0, -floorCanvas.height / scale);
+
+  // Ensure floorPlanBounds is defined
+  if (!floorPlanBounds) {
+    // Floor plan bounds are not defined; cannot draw grid
+    ctx.restore();
+    return;
+  }
+
+  // Determine the bounds for the grid based on the floor plan bounds
+  const startX = floorPlanBounds.minX;
+  const endX = floorPlanBounds.maxX;
+  const startY = floorPlanBounds.minY;
+  const endY = floorPlanBounds.maxY;
+
+  ctx.beginPath();
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 0.5 / scale; // Thin lines, adjust as needed
+
+  // Draw vertical grid lines within floor plan bounds
+  for (let x = Math.ceil(startX / gridSpacing) * gridSpacing; x <= endX; x += gridSpacing) {
+    ctx.moveTo(x, startY);
+    ctx.lineTo(x, endY);
+  }
+
+  // Draw horizontal grid lines within floor plan bounds
+  for (let y = Math.ceil(startY / gridSpacing) * gridSpacing; y <= endY; y += gridSpacing) {
+    ctx.moveTo(startX, y);
+    ctx.lineTo(endX, y);
+  }
+
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawParquetBoards() {
@@ -1301,7 +1503,11 @@ function drawParquetBoards() {
         segment.boards.forEach(board => {
           ctx.beginPath();
           ctx.rect(board.x, board.y, board.width, board.height);
-          ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
+          if (board.height < minBoardRemainings) {
+            ctx.fillStyle = 'rgba(165,140,42,0.7)';
+          } else {
+            ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
+          }
           ctx.fill();
           ctx.lineWidth = 1 / scale; // Adjust line width based on scale
           ctx.strokeStyle = 'black';
@@ -1314,9 +1520,9 @@ function drawParquetBoards() {
             ctx.save();
             ctx.scale(1, -1); // Flip text vertically
             ctx.fillText(
-              board.number.toString(),
-              board.x + board.width / 2,
-              -(board.y + board.height / 2)
+                board.number.toString(),
+                board.x + board.width / 2,
+                -(board.y + board.height / 2)
             );
             ctx.restore();
           }
@@ -1324,78 +1530,106 @@ function drawParquetBoards() {
       }
     });
     if (row.remainings.length > 0) {
-        const space = 40;
-        if (row.direction === 'up') {
-            let offsetTop = floorPlanBounds.maxY + space;
-            let offsetBottom = floorPlanBounds.minY - space;
-            row.remainings.forEach(remaining => {
-                if (remaining.reused == false) {
-                    if (remaining.cut === 'left') {
-                        const x = row.segments[0].x;
-                        const y = offsetTop;
-                        const width = row.segments[0].width;
-                        const height = remaining.height;
-                       ctx.beginPath();
-                       ctx.rect(x, y, width, height);
-                       ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
-                       ctx.fill();
-                       ctx.lineWidth = 1 / scale; // Adjust line width based on scale
-                       ctx.strokeStyle = 'black';
-                       ctx.stroke();
-                       offsetTop += remaining.height + space;
+      const space = 40;
+      if (row.direction === 'up') {
+        let offsetTop = floorPlanBounds.maxY + space;
+        let offsetBottom = floorPlanBounds.minY - space;
+        row.remainings.forEach(remaining => {
+          if (remaining.reused === false) {
+            if (remaining.cut === 'left') {
+              const x = row.segments[0].x;
+              const y = offsetTop;
+              const width = row.segments[0].width;
+              const height = remaining.height;
+              ctx.beginPath();
+              ctx.rect(x, y, width, height);
+              ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
+              ctx.fill();
+              ctx.lineWidth = 1 / scale; // Adjust line width based on scale
+              ctx.strokeStyle = 'black';
+              ctx.stroke();
+              offsetTop += remaining.height + space;
 
-                       if (showNumbersCheckbox.checked) {
-                           ctx.fillStyle = 'black';
-                           ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
-                           ctx.textAlign = 'center';
-                           ctx.textBaseline = 'middle';
-                           ctx.save();
-                           ctx.scale(1, -1); // Flip text vertically
-                           ctx.fillText(
-                             remaining.number.toString(),
-                             x + width / 2,
-                             -(y + height / 2)
-                           );
-                           ctx.restore();
-                         }
+              if (showNumbersCheckbox.checked) {
+                ctx.fillStyle = 'black';
+                ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.save();
+                ctx.scale(1, -1); // Flip text vertically
+                ctx.fillText(
+                    remaining.number.toString(),
+                    x + width / 2,
+                    -(y + height / 2)
+                );
+                ctx.restore();
+              }
 
-                    } else {
-                        offsetBottom -= remaining.height;
-                        const x = row.segments[0].x;
-                        const y = offsetBottom;
-                        const width = row.segments[0].width;
-                        const height = remaining.height;
-                       ctx.beginPath();
-                       ctx.rect(x, y, width, height);
-                       ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
-                       ctx.fill();
-                       ctx.lineWidth = 1 / scale; // Adjust line width based on scale
-                       ctx.strokeStyle = 'black';
-                       ctx.stroke();
-                       offsetBottom -= space;
+            } else if (remaining.cut === 'right') {
+              offsetBottom -= remaining.height;
+              const x = row.segments[0].x;
+              const y = offsetBottom;
+              const width = row.segments[0].width;
+              const height = remaining.height;
+              ctx.beginPath();
+              ctx.rect(x, y, width, height);
+              ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
+              ctx.fill();
+              ctx.lineWidth = 1 / scale; // Adjust line width based on scale
+              ctx.strokeStyle = 'black';
+              ctx.stroke();
+              offsetBottom -= space;
 
-                       if (showNumbersCheckbox.checked) {
-                          ctx.fillStyle = 'black';
-                          ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
-                          ctx.textAlign = 'center';
-                          ctx.textBaseline = 'middle';
-                          ctx.save();
-                          ctx.scale(1, -1); // Flip text vertically
-                          ctx.fillText(
-                            remaining.number.toString(),
-                            x + width / 2,
-                            -(y + height / 2)
-                          );
-                          ctx.restore();
-                        }
-                    }
-                }
-            });
+              if (showNumbersCheckbox.checked) {
+                ctx.fillStyle = 'black';
+                ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.save();
+                ctx.scale(1, -1); // Flip text vertically
+                ctx.fillText(
+                    remaining.number.toString(),
+                    x + width / 2,
+                    -(y + height / 2)
+                );
+                ctx.restore();
+              }
+            }
+          } else if (remaining.cut === 'both') {
+            offsetBottom -= remaining.height;
+            const x = row.segments[0].x;
+            const y = offsetBottom;
+            const width = row.segments[0].width;
+            const height = remaining.height;
+            ctx.beginPath();
+            ctx.rect(x, y, width, height);
+            ctx.fillStyle = 'rgba(42,165,44,0.7)';
+            ctx.fill();
+            ctx.lineWidth = 1 / scale; // Adjust line width based on scale
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+            offsetBottom -= space;
 
-            floorPlanBounds.maxY
-        }
+            if (showNumbersCheckbox.checked) {
+              ctx.fillStyle = 'black';
+              ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.save();
+              ctx.scale(1, -1); // Flip text vertically
+              ctx.fillText(
+                  remaining.number.toString(),
+                  x + width / 2,
+                  -(y + height / 2)
+              );
+              ctx.restore();
+            }
+          }
+        });
+
+        floorPlanBounds.maxY
+      }
     }
-
 
   });
 
