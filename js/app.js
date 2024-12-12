@@ -1188,6 +1188,18 @@ function findPreviousBoardEndY(currentEndY, row) {
   }
 }
 
+function findFirstBoard(previousRow, availableSegment) {
+  for (let i = 0; i < previousRow.segments.length; i++) {
+    const previousSegment = previousRow.segments[i];
+    for (let j = 0; j < previousSegment.boards.length; j++) {
+      const previousBoard = previousSegment.boards[j];
+      if (previousBoard.y >= availableSegment.y) {
+        return previousBoard;
+      }
+    }
+  }
+}
+
 function computeNewBoard() {
   //console.log("Find last not completed row and segment")
   if (rows.length === 0) {
@@ -1294,24 +1306,16 @@ function computeNewBoard() {
           } else {
             let firstBoard = null;
             const previousRow = rows[availableSegment.row.number - 2];
-            for (let i = 0; i < previousRow.segments.length; i++) {
-              const previousSegment = previousRow.segments[i];
-              if (previousSegment.y >= availableSegment.y) {
-                firstBoard = previousSegment.boards[0];
-                break;
-              }
-            }
+            firstBoard = findFirstBoard(previousRow, availableSegment);
+
             if (firstBoard == null) {
-               firstBoard = rows[0].segments[0].boards[0];
+              const previousSegment = previousRow.segments[previousRow.segments.length - 1];
+              firstBoard = previousSegment.boards[previousSegment.boards.length - 1];
             }
-
-
 
             let firstBoardEndY = firstBoard.y + firstBoard.height;
             const delta = parseFloat(customArrangeHeight.value) ;//* (availableSegment.row.number - 1);
             firstBoardEndY += delta;
-
-
 
             let currentBoardEndY = availableSegment.y + currentBordHeight;
             firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
