@@ -35,6 +35,7 @@ function drawCanvas() {
 
   drawFloorPlanLines();
   ctx.restore();
+
   drawCornerPoints(); // todo remove
   drawParquetBoards();
   drawArrows(); // todo remove
@@ -125,10 +126,19 @@ floorCanvas.addEventListener('click', function (e) {
 
 function drawSelectedCorner() {
   if (selectedCorner) {
+    ctx.save();
+    ctx.translate(panOffset.x, panOffset.y);
     ctx.beginPath();
     ctx.fillStyle = 'red';
-    ctx.arc(selectedCorner.x * scale, floorCanvas.height - selectedCorner.y * scale, 5, 0, 2 * Math.PI);
+    ctx.arc(
+        selectedCorner.x * scale,
+        floorCanvas.height - selectedCorner.y * scale,
+        5,
+        0,
+        2 * Math.PI
+    );
     ctx.fill();
+    ctx.restore();
   }
 }
 
@@ -163,7 +173,7 @@ function drawFloorPlanLines() {
 }
 
 function drawArrows() {
-
+  ctx.save();
   // Compute screen coordinates for (0,0) floor plan
   let X0 = panOffset.x;
   let Y0 = floorCanvas.height + panOffset.y;
@@ -279,7 +289,7 @@ function drawRemainings(row) {
             ctx.stroke();
             offsetTop += remaining.height + space;
 
-            if (showNumbersCheckbox.checked) {
+            if (showNumbers) {
               ctx.fillStyle = 'black';
               ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
               ctx.textAlign = 'center';
@@ -305,7 +315,7 @@ function drawRemainings(row) {
             ctx.stroke();
             offsetBottom -= space;
 
-            if (showNumbersCheckbox.checked) {
+            if (showNumbers) {
               ctx.fillStyle = 'black';
               ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
               ctx.textAlign = 'center';
@@ -331,7 +341,7 @@ function drawRemainings(row) {
           ctx.stroke();
           offsetBottom -= space;
 
-          if (showNumbersCheckbox.checked) {
+          if (showNumbers) {
             ctx.fillStyle = 'black';
             ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
             ctx.textAlign = 'center';

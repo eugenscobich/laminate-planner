@@ -46,7 +46,7 @@ function reset() {
   boardHeightOffset = parseFloat(boardHeightOffsetInput.value);
   minBoardHeight = parseFloat(minBoardHeightInput.value);
   boardCost = parseFloat(boardCostInput.value);
-  showNumbers = parseFloat(showNumbersCheckbox.checked);
+  showNumbers = showNumbersCheckbox.checked;
 }
 
 

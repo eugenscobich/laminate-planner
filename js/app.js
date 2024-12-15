@@ -4,13 +4,11 @@ loadFileButton.addEventListener('click', () => {
     alert('Please select a file.');
     return;
   }
-
+  reset();
   loadDXFFile(file);
   floorPlanBounds = getFloorPlanBounds();
   cornerPoints = getCornerPoints();
-
   drawCanvas();
-  reset();
 });
 
 function validate() {
@@ -547,5 +545,5 @@ function updateStatistics() {
   totalSquareOfBoardsValue.innerText = totalSquareOfBoardsValueValue;
   totalFloorSquareValue.innerText = calculatetotalFloorSquareValue();
   totalRemainingSquareValue.innerText = calculatetotalRemainingSquareValue();
-  totalCostValue.innerText = totalSquareOfBoardsValueValue * costInput.value;
+  totalCostValue.innerText = totalSquareOfBoardsValueValue * boardCost;
 }

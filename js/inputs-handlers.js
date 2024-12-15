@@ -127,7 +127,10 @@ fullCompleteButton.addEventListener('click', function () {
   completeTheFloor();
 });
 
-showNumbersCheckbox.addEventListener('change', drawCanvas);
+showNumbersCheckbox.addEventListener('change', function () {
+  showNumbers = showNumbersCheckbox.checked;
+  drawCanvas();
+});
 
 doNotUseSmallRemainingsCheckbox.addEventListener('change', function () {
   reset();
