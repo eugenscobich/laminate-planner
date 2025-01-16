@@ -8,14 +8,24 @@ let wasMoving = false;
 let panStart = {x: 0, y: 0};
 
 function resizeCanvas() {
-  const viewportWidth = window.innerWidth - window.innerWidth * 0.3;
-  const viewportHeight = window.innerHeight - canvasContainer.offsetTop - 20; // Adjust for margins or other elements
+
+  // Make it visually fill the positioned parent
+  floorCanvas.style.width ='100%';
+  //floorCanvas.style.height='100%';
+  // ...then set the internal size to match
+  floorCanvas.width  = floorCanvas.offsetWidth;
+  floorCanvas.height = window.innerHeight - canvasContainer.offsetTop - 16;
+  /*
+  const viewportWidth = window.innerWidth - (window.innerWidth / 12) * 3 - 26;
+  const viewportHeight = window.innerHeight - canvasContainer.offsetTop - 8; // Adjust for margins or other elements
   floorCanvas.width = viewportWidth;
   floorCanvas.height = viewportHeight;
+
+   */
 }
 
 // Call resizeCanvas on page load
-//resizeCanvas();
+resizeCanvas();
 
 // Optionally, handle window resize
 window.addEventListener('resize', () => {
