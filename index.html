@@ -23,7 +23,7 @@
 
   <!-- Include the DXF parser library via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.min.js"></script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 </head>
 
@@ -57,7 +57,8 @@
                   <div class="row">
                     <div class="btn-group" role="group">
                       <button type="button" class="btn btn-primary" id="rotateBy45">Rotate by 45&deg;</button>
-                      <button type="button" class="btn btn-primary" id="rotateBy90">Rotate by 90&deg;</button>
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addALineModal">Add a line</button>
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addARectangleModal">Add a rectangle</button>
                     </div>
                   </div>
                 </div>
@@ -209,6 +210,7 @@
                       <button type="button" class="btn btn-primary" id="addRowButton">Add Row</button>
                       <button type="button" class="btn btn-primary" id="addBoardButton">Add Board</button>
                       <button type="button" class="btn btn-primary" id="fullCompleteButton">Full Complete</button>
+                      <button type="button" class="btn btn-primary" id="exportButton">Export</button>
                     </div>
                   </div>
                 </div>
@@ -294,6 +296,23 @@
               </div>
             </div>
 
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight"
+                        aria-expanded="false"
+                        aria-controls="collapseEight">
+                  Buy me a Coffee
+                </button>
+              </h2>
+              <div id="collapseEight" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+                  <p>
+                    To be added
+                  </p>
+                </div>
+              </div>
+            </div>
+
 
           </div>
         </div>
@@ -302,6 +321,91 @@
     <div class="col-9">
       <div class="container-fluid border my-2 p-0" id="canvas-container">
         <canvas id="floorCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="addALineModal" tabindex="-1" aria-labelledby="addLineModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="addLineModalLabel">Add a line</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row pb-2">
+          <label for="addALineStartX" class="col-5 col-form-label">Start X:</label>
+          <div class="col-7">
+            <input class="form-control" id="addALineStartX" type="number">
+          </div>
+        </div>
+        <div class="row pb-2">
+          <label for="addALineStartY" class="col-5 col-form-label">Start Y:</label>
+          <div class="col-7">
+            <input class="form-control" id="addALineStartY" type="number">
+          </div>
+        </div>
+        <div class="row pb-2">
+          <label for="addALineEndX" class="col-5 col-form-label">End X:</label>
+          <div class="col-7">
+            <input class="form-control" id="addALineEndX" type="number">
+          </div>
+        </div>
+        <div class="row pb-2">
+          <label for="addALineEndY" class="col-5 col-form-label">End Y:</label>
+          <div class="col-7">
+            <input class="form-control" id="addALineEndY" type="number">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="addALine">Add line</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addARectangleModal" tabindex="-1" aria-labelledby="addRectangleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="addRectangleModalLabel">Add a rectangle</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row pb-2">
+          <label for="addARectangleStartX" class="col-5 col-form-label">Bottom left corner X:</label>
+          <div class="col-7">
+            <input class="form-control" id="addARectangleStartX" type="number">
+          </div>
+        </div>
+        <div class="row pb-2">
+          <label for="addARectangleStartY" class="col-5 col-form-label">Bottom left corner Y:</label>
+          <div class="col-7">
+            <input class="form-control" id="addARectangleStartY" type="number">
+          </div>
+        </div>
+        <div class="row pb-2">
+          <label for="addARectangleEndX" class="col-5 col-form-label">Top right corner X:</label>
+          <div class="col-7">
+            <input class="form-control" id="addARectangleEndX" type="number">
+          </div>
+        </div>
+        <div class="row pb-2">
+          <label for="addARectangleEndY" class="col-5 col-form-label">Top right corner Y:</label>
+          <div class="col-7">
+            <input class="form-control" id="addARectangleEndY" type="number">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="addARectangle">Add rectangle</button>
       </div>
     </div>
   </div>

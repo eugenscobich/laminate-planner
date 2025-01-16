@@ -145,10 +145,34 @@ arrangeModeSelect.addEventListener('change', function () {
 rotateBy45Button.addEventListener('click', function () {
   reset();
   rotateBy(45);
-  completeTheFloor();
 });
 
-rotateBy90Button.addEventListener('click', function () {
+addALineModalElement.addEventListener('show.bs.modal', event => {
+  addALineStartXInput.value = '';
+  addALineStartYInput.value = '';
+  addALineEndXInput.value = '';
+  addALineEndYInput.value = '';
+})
+
+addALineButton.addEventListener('click', function () {
+  addALineModal.hide();
   reset();
-  rotateBy(90);
+  addALine();
+});
+
+addARectangleModalElement.addEventListener('show.bs.modal', event => {
+  addARectangleStartXInput.value = '';
+  addARectangleStartYInput.value = '';
+  addARectangleEndXInput.value = '';
+  addARectangleEndYInput.value = '';
+})
+
+addARectangleButton.addEventListener('click', function () {
+  addARectangleModal.hide();
+  reset();
+  addARectangle();
+});
+
+exportButton.addEventListener('click', function () {
+  exportPdf();
 });

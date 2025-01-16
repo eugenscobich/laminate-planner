@@ -6,9 +6,47 @@ fileInput.addEventListener('change', () => {
   }
   reset();
   loadDXFFile(file);
-
 });
 
+
+function addALine() {
+  const x1 = parseInt(addALineStartXInput.value);
+  const y1 = parseInt(addALineStartYInput.value);
+  const x2 = parseInt(addALineEndXInput.value);
+  const y2 = parseInt(addALineEndYInput.value);
+
+  // Create a line object and push to floorPlanLines
+  const newLine = { x1, y1, x2, y2 };
+  floorPlanLines.push(newLine);
+
+  // Recalculate bounds and corners, then draw
+  floorPlanBounds = getFloorPlanBounds();
+  cornerPoints = getCornerPoints();
+  drawCanvas();
+}
+
+function addARectangle() {
+
+  const x1 = parseInt(addARectangleStartXInput.value);
+  const y1 = parseInt(addARectangleStartYInput.value);
+  const x2 = parseInt(addARectangleEndXInput.value);
+  const y2 = parseInt(addARectangleEndYInput.value);
+
+  const rectLines = [
+    { x1: x1,  y1: y1,    x2: x2, y2: y1    }, // top edge
+    { x1: x2, y1: y1,    x2: x2, y2: y2 }, // right edge
+    { x1: x2, y1: y2, x2: x1,  y2: y2 }, // bottom edge
+    { x1: x1,  y1: y2, x2: x1,  y2: y1    }  // left edge
+  ];
+
+  // Push them into floorPlanLines
+  rectLines.forEach(line => floorPlanLines.push(line));
+
+  // Recalculate bounds and corners, then draw
+  floorPlanBounds = getFloorPlanBounds();
+  cornerPoints = getCornerPoints();
+  drawCanvas();
+}
 
 function validate() {
   if (!selectedCorner) {
@@ -574,4 +612,28 @@ function updateStatistics() {
   totalFloorSquareValue.innerText = calculatetotalFloorSquareValue();
   totalRemainingSquareValue.innerText = calculatetotalRemainingSquareValue();
   totalCostValue.innerText = totalSquareOfBoardsValueValue * boardCost;
+}
+
+
+
+function exportPdf() {
+  // Convert the canvas to a data URL (base64-encoded image)
+  const dataUrl = floorCanvas.toDataURL('image/png'); // or 'image/jpeg'
+
+  // Create a new jsPDF instance
+  // Assuming the user includes jsPDF via the CDN, we can use:
+  const { jsPDF } = window.jspdf; // from the global namespace
+  const pdf = new jsPDF({
+    orientation: 'landscape', // or 'portrait'
+    unit: 'px', // you can also use 'pt', 'mm', etc.
+    format: [floorCanvas.width, floorCanvas.height]
+    // setting format to canvas dimension ensures 1:1 match
+  });
+
+  // Add the canvas image to the PDF
+  // x=0, y=0 => top-left, canvas dimensions => fill entire PDF page
+  pdf.addImage(dataUrl, 'PNG', 0, 0, floorCanvas.width, floorCanvas.height);
+
+  // Download the PDF
+  pdf.save('floor-plan.pdf');
 }

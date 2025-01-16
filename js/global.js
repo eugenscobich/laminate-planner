@@ -25,7 +25,28 @@ const totalRemainingSquareValue = document.getElementById('totalRemainingSquareV
 const arrangeModeSelect = document.getElementById('arrangeModeSelect');
 
 const rotateBy45Button = document.getElementById('rotateBy45');
-const rotateBy90Button = document.getElementById('rotateBy90');
+const addALineButton = document.getElementById('addALine');
+const addARectangleButton = document.getElementById('addARectangle');
+const exportButton = document.getElementById('exportButton');
+
+const addALineModalElement = document.getElementById('addALineModal');
+const addALineStartXInput = document.getElementById('addALineStartX');
+const addALineStartYInput = document.getElementById('addALineStartY');
+const addALineEndXInput = document.getElementById('addALineEndX');
+const addALineEndYInput = document.getElementById('addALineEndY');
+const addALineModal = new bootstrap.Modal('#addALineModal', {
+  keyboard: false
+})
+
+const addARectangleModalElement = document.getElementById('addARectangleModal');
+const addARectangleStartXInput = document.getElementById('addARectangleStartX');
+const addARectangleStartYInput = document.getElementById('addARectangleStartY');
+const addARectangleEndXInput = document.getElementById('addARectangleEndX');
+const addARectangleEndYInput = document.getElementById('addARectangleEndY');
+const addARectangleModal = new bootstrap.Modal('#addARectangleModal', {
+  keyboard: false
+})
+
 
 let selectedCorner = null;
 let floorPlanBounds = null;
