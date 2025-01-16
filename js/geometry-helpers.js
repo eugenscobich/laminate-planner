@@ -42,3 +42,17 @@ function getLineIntersection(seg1, seg2) {
 
   return null; // Intersection point is not on both segments
 }
+
+function rotatePoint(x, y, cx, cy, angleRad) {
+  // Translate point so center is (0,0)
+  const tx = x - cx;
+  const ty = y - cy;
+  // Apply rotation
+  const rx = tx * Math.cos(angleRad) - ty * Math.sin(angleRad);
+  const ry = tx * Math.sin(angleRad) + ty * Math.cos(angleRad);
+  // Translate back
+  return {
+    x: rx + cx,
+    y: ry + cy
+  };
+}

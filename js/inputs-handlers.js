@@ -141,3 +141,14 @@ arrangeModeSelect.addEventListener('change', function () {
   reset();
   completeTheFloor();
 });
+
+rotateBy45Button.addEventListener('click', function () {
+  reset();
+  rotateBy(45);
+  completeTheFloor();
+});
+
+rotateBy90Button.addEventListener('click', function () {
+  reset();
+  rotateBy(90);
+});

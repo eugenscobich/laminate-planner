@@ -24,6 +24,9 @@ const totalSquareOfBoardsValue = document.getElementById('totalSquareOfBoardsVal
 const totalRemainingSquareValue = document.getElementById('totalRemainingSquareValue');
 const arrangeModeSelect = document.getElementById('arrangeModeSelect');
 
+const rotateBy45Button = document.getElementById('rotateBy45');
+const rotateBy90Button = document.getElementById('rotateBy90');
+
 let selectedCorner = null;
 let floorPlanBounds = null;
 let floorPlanLines = [];

@@ -6,10 +6,9 @@ fileInput.addEventListener('change', () => {
   }
   reset();
   loadDXFFile(file);
-  floorPlanBounds = getFloorPlanBounds();
-  cornerPoints = getCornerPoints();
-  drawCanvas();
+
 });
+
 
 function validate() {
   if (!selectedCorner) {
@@ -17,6 +16,35 @@ function validate() {
     throw new Error('Please select a starting corner on the floor plan.');
   }
 }
+
+function rotateBy(angleDeg) {
+  // 1) Reset to original geometry
+  let tempFloorPlanLines = floorPlanLines.map(line => ({...line}));
+
+  // 2) Convert angle to radians
+  const angleRad = angleDeg * (Math.PI / 180);
+
+  // 4) For each line, rotate endpoints
+  for (let i = 0; i < tempFloorPlanLines.length; i++) {
+    const line = tempFloorPlanLines[i];
+
+    // rotate (x1,y1)
+    const { x: rx1, y: ry1 } = rotatePoint(line.x1, line.y1, 0, 0, angleRad);
+    // rotate (x2,y2)
+    const { x: rx2, y: ry2 } = rotatePoint(line.x2, line.y2, 0, 0, angleRad);
+
+    floorPlanLines[i].x1 = rx1;
+    floorPlanLines[i].y1 = ry1;
+    floorPlanLines[i].x2 = rx2;
+    floorPlanLines[i].y2 = ry2;
+  }
+
+  floorPlanBounds = getFloorPlanBounds();
+  cornerPoints = getCornerPoints();
+  drawCanvas();
+}
+
+
 
 function completeTheFloor() {
   validate();
