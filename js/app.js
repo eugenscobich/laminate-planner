@@ -1,4 +1,4 @@
-loadFileButton.addEventListener('click', () => {
+fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
   if (!file) {
     alert('Please select a file.');

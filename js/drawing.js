@@ -15,7 +15,7 @@ function resizeCanvas() {
 }
 
 // Call resizeCanvas on page load
-resizeCanvas();
+//resizeCanvas();
 
 // Optionally, handle window resize
 window.addEventListener('resize', () => {
