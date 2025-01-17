@@ -31,22 +31,22 @@ boardWidthOffsetInput.addEventListener('wheel', function (e) {
   updateBoardWidthOffsetInput();
 });
 
-boardHeightOffsetInput.addEventListener('input', () => {
-  updateboardHeightOffsetInput();
+boardLengthOffsetInput.addEventListener('input', () => {
+  updateboardLengthOffsetInput();
 })
 
-function updateboardHeightOffsetInput() {
-  boardHeightOffsetValue.textContent = boardHeightOffsetInput.value;
+function updateboardLengthOffsetInput() {
+  boardLengthOffsetValue.textContent = boardLengthOffsetInput.value;
   reset();
   completeTheFloor();
 }
 
-boardHeightOffsetInput.addEventListener('wheel', function (e) {
+boardLengthOffsetInput.addEventListener('wheel', function (e) {
   e.preventDefault();
   const step = 1;
-  let currentValue = parseFloat(boardHeightOffsetInput.value) || 0;
-  const minValue = parseFloat(boardHeightOffsetInput.min) || -Infinity;
-  const maxValue = parseFloat(boardHeightOffsetInput.max) || Infinity;
+  let currentValue = parseFloat(boardLengthOffsetInput.value) || 0;
+  const minValue = parseFloat(boardLengthOffsetInput.min) || -Infinity;
+  const maxValue = parseFloat(boardLengthOffsetInput.max) || Infinity;
 
   if (e.deltaY < 0) {
     currentValue += step;
@@ -59,9 +59,9 @@ boardHeightOffsetInput.addEventListener('wheel', function (e) {
       currentValue = minValue;
     }
   }
-  boardHeightOffsetInput.value = currentValue;
+  boardLengthOffsetInput.value = currentValue;
 
-  updateboardHeightOffsetInput();
+  updateboardLengthOffsetInput();
 });
 
 customArrangeBoardOffsetInput.addEventListener('input', function () {
@@ -97,8 +97,8 @@ customArrangeBoardOffsetInput.addEventListener('wheel', function (e) {
   updateCustomArrangeBoardOffsetInput();
 });
 
-heightInput.addEventListener('change', () => {
-  boardHeightOffsetInput.min = heightInput.value * -1;
+lengthInput.addEventListener('change', () => {
+  boardLengthOffsetInput.min = lengthInput.value * -1;
   reset();
   completeTheFloor();
 })
@@ -109,7 +109,7 @@ widthInput.addEventListener('change', () => {
   completeTheFloor();
 })
 
-minBoardHeightInput.addEventListener('change', () => {
+minboardLengthInput.addEventListener('change', () => {
   reset();
   completeTheFloor();
 })

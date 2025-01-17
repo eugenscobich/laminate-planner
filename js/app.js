@@ -8,68 +8,22 @@ fileInput.addEventListener('change', () => {
   loadDXFFile(file);
 });
 
-
-function addALine() {
-  const x1 = parseInt(addALineStartXInput.value);
-  const y1 = parseInt(addALineStartYInput.value);
-  const x2 = parseInt(addALineEndXInput.value);
-  const y2 = parseInt(addALineEndYInput.value);
-
-  // Create a line object and push to floorPlanLines
-  const newLine = { x1, y1, x2, y2 };
-  floorPlanLines.push(newLine);
-
-  // Recalculate bounds and corners, then draw
-  floorPlanBounds = getFloorPlanBounds();
-  cornerPoints = getCornerPoints();
-  drawCanvas();
-}
-
-function addARectangle() {
-
-  const x1 = parseInt(addARectangleStartXInput.value);
-  const y1 = parseInt(addARectangleStartYInput.value);
-  const x2 = parseInt(addARectangleEndXInput.value);
-  const y2 = parseInt(addARectangleEndYInput.value);
-
-  const rectLines = [
-    { x1: x1,  y1: y1,    x2: x2, y2: y1    }, // top edge
-    { x1: x2, y1: y1,    x2: x2, y2: y2 }, // right edge
-    { x1: x2, y1: y2, x2: x1,  y2: y2 }, // bottom edge
-    { x1: x1,  y1: y2, x2: x1,  y2: y1    }  // left edge
-  ];
-
-  // Push them into floorPlanLines
-  rectLines.forEach(line => floorPlanLines.push(line));
-
-  // Recalculate bounds and corners, then draw
-  floorPlanBounds = getFloorPlanBounds();
-  cornerPoints = getCornerPoints();
-  drawCanvas();
-}
-
-function validate() {
-  if (!selectedCorner) {
-    alert('Please select a starting corner on the floor plan.');
-    throw new Error('Please select a starting corner on the floor plan.');
-  }
-}
-
 function rotateBy(angleDeg) {
+  currentRotateAngle += angleDeg;
   // 1) Reset to original geometry
-  let tempFloorPlanLines = floorPlanLines.map(line => ({...line}));
+  let tempFloorPlanLines = originalFloorPlanLines.map(line => ({...line}));
 
   // 2) Convert angle to radians
-  const angleRad = angleDeg * (Math.PI / 180);
+  const angleRad = currentRotateAngle * (Math.PI / 180);
 
   // 4) For each line, rotate endpoints
   for (let i = 0; i < tempFloorPlanLines.length; i++) {
     const line = tempFloorPlanLines[i];
 
     // rotate (x1,y1)
-    const { x: rx1, y: ry1 } = rotatePoint(line.x1, line.y1, 0, 0, angleRad);
+    const {x: rx1, y: ry1} = rotatePoint(line.x1, line.y1, 0, 0, angleRad);
     // rotate (x2,y2)
-    const { x: rx2, y: ry2 } = rotatePoint(line.x2, line.y2, 0, 0, angleRad);
+    const {x: rx2, y: ry2} = rotatePoint(line.x2, line.y2, 0, 0, angleRad);
 
     floorPlanLines[i].x1 = rx1;
     floorPlanLines[i].y1 = ry1;
@@ -78,14 +32,23 @@ function rotateBy(angleDeg) {
   }
 
   floorPlanBounds = getFloorPlanBounds();
-  cornerPoints = getCornerPoints();
   drawCanvas();
 }
 
-
+function validate() {
+  if (floorPlanLines.length < 4) {
+    // todo add validation on closed space
+    console.log('Please complete the floor plan');
+    return false;
+  }
+  return true
+}
 
 function completeTheFloor() {
-  validate();
+  if (!validate()) {
+    return;
+  }
+
   while (true) {
     const addedRow = computeNewRow();
     if (!addedRow) {
@@ -119,174 +82,161 @@ function computeBord() {
 }
 
 function computeNewRow() {
-  const rowDirection = findRowDirection();
   const rowNumber = rows.length + 1;
   const row = {
-    direction: rowDirection, segments: [], remainings: [], number: rowNumber
+    segments: [], remainings: [], number: rowNumber
   };
 
-  if (rowDirection === 'up') {
-    const rowLeftVerticalSegment = {
-      x1: floorPlanBounds.minX + (rowNumber - 1) * boardWidth + boardWidthOffset,
-      y1: floorPlanBounds.minY,
-      x2: floorPlanBounds.minX + (rowNumber - 1) * boardWidth + boardWidthOffset,
-      y2: floorPlanBounds.maxY
-    };
+  const rowTopHorizontalSegment = {
+    x1: floorPlanBounds.minX,
+    y1: floorPlanBounds.maxY - (rowNumber - 1) * boardWidth + boardWidthOffset,
+    x2: floorPlanBounds.maxX,
+    y2: floorPlanBounds.maxY - (rowNumber - 1) * boardWidth + boardWidthOffset
+  };
 
-    const rowRightVerticalSegment = {
-      x1: rowLeftVerticalSegment.x1 + boardWidth,
-      y1: floorPlanBounds.minY,
-      x2: rowLeftVerticalSegment.x1 + boardWidth,
-      y2: floorPlanBounds.maxY
-    };
-    const leftSegmentIntersectionPoints = [];
-    const rightSegmentIntersectionPoints = [];
-    for (let i = 0; i < floorPlanLines.length; i++) {
-      const leftSegmentIntersectionPoint = getLineIntersection(floorPlanLines[i], rowLeftVerticalSegment);
-      if (leftSegmentIntersectionPoint != null) {
-        leftSegmentIntersectionPoints.push(leftSegmentIntersectionPoint);
-      }
+  const rowBottomHorizontalSegment = {
+    x1: floorPlanBounds.minX,
+    y1: rowTopHorizontalSegment.y1 - boardWidth,
+    x2: floorPlanBounds.maxX,
+    y2: rowTopHorizontalSegment.y2 - boardWidth
+  };
 
-      const rightSegmentIntersectionPoint = getLineIntersection(floorPlanLines[i], rowRightVerticalSegment);
-      if (rightSegmentIntersectionPoint != null) {
-        rightSegmentIntersectionPoints.push(rightSegmentIntersectionPoint);
-      }
+  const topSegmentIntersectionPoints = [];
+  const bottomSegmentIntersectionPoints = [];
+  for (let i = 0; i < floorPlanLines.length; i++) {
+    const topSegmentIntersectionPoint = getLineIntersection(floorPlanLines[i], rowTopHorizontalSegment);
+    if (topSegmentIntersectionPoint != null) {
+      topSegmentIntersectionPoints.push(topSegmentIntersectionPoint);
     }
 
-    leftSegmentIntersectionPoints.sort(function (a, b) {
-      return a.y - b.y
-    });
-    rightSegmentIntersectionPoints.sort(function (a, b) {
-      return a.y - b.y
-    });
-
-    let rowMinY = null;
-    let rowLeftMinY = null;
-    let rowRightMinY = null;
-    let rowMaxY = null;
-    let rowLeftMaxY = null;
-    let rowRightMaxY = null;
-    if (leftSegmentIntersectionPoints.length > 0 && rightSegmentIntersectionPoints.length > 0) {
-      rowLeftMinY = leftSegmentIntersectionPoints[0].y;
-      rowRightMinY = rightSegmentIntersectionPoints[0].y;
-      rowMinY = Math.min(rowLeftMinY, rowRightMinY);
-      rowLeftMaxY = leftSegmentIntersectionPoints[leftSegmentIntersectionPoints.length - 1].y;
-      rowRightMaxY = rightSegmentIntersectionPoints[rightSegmentIntersectionPoints.length - 1].y;
-      rowMaxY = Math.max(rowLeftMaxY, rowRightMaxY);
-    } else if (leftSegmentIntersectionPoints.length > 0) {
-      rowLeftMinY = leftSegmentIntersectionPoints[0].y;
-      rowMinY = rowLeftMinY;
-      rowLeftMaxY = leftSegmentIntersectionPoints[leftSegmentIntersectionPoints.length - 1].y;
-      rowMaxY = rowLeftMaxY;
-    } else if (rightSegmentIntersectionPoints.length > 0) {
-      rowRightMinY = rightSegmentIntersectionPoints[0].y;
-      rowMinY = rowRightMinY
-      rowRightMaxY = rightSegmentIntersectionPoints[rightSegmentIntersectionPoints.length - 1].y;
-      rowMaxY = rowRightMaxY;
-    } else {
-      //console.log("Could not indetify minY/maxY");
+    const bottomSegmentIntersectionPoint = getLineIntersection(floorPlanLines[i], rowBottomHorizontalSegment);
+    if (bottomSegmentIntersectionPoint != null) {
+      bottomSegmentIntersectionPoints.push(bottomSegmentIntersectionPoint);
     }
+  }
 
-    let nextLeftMinY = rowMinY;
-    let nextRightMinY = rowMinY;
-    let j = 0;
-    while (true) {
-      //console.log("Find starting Y");
-      let foundLeftMinY = false;
-      for (let i = 0; i < leftSegmentIntersectionPoints.length; i++) {
-        if (leftSegmentIntersectionPoints[i].y >= nextLeftMinY) {
-          nextLeftMinY = leftSegmentIntersectionPoints[i].y;
-          foundLeftMinY = true;
-          break;
-        }
-      }
-      let foundRightMinY = false;
-      for (let i = 0; i < rightSegmentIntersectionPoints.length; i++) {
-        if (rightSegmentIntersectionPoints[i].y >= nextRightMinY) {
-          nextRightMinY = rightSegmentIntersectionPoints[i].y;
-          foundRightMinY = true;
-          break;
-        }
-      }
-      if (foundLeftMinY && foundRightMinY) {
-        minY = Math.min(nextLeftMinY, nextRightMinY);
-      } else if (foundLeftMinY) {
-        minY = nextLeftMinY;
-      } else if (foundRightMinY) {
-        minY = nextRightMinY;
-      } else {
-        maxY = null;
-      }
+  topSegmentIntersectionPoints.sort(function (a, b) {
+    return a.x - b.x
+  });
+  bottomSegmentIntersectionPoints.sort(function (a, b) {
+    return a.x - b.x
+  });
 
-      //console.log("Find end of segment");
-      let nextLeftMaxY = rowMaxY + 1;
-      let foundLeftMaxY = false;
-      for (let i = 0; i < leftSegmentIntersectionPoints.length; i++) {
-        if (leftSegmentIntersectionPoints[i].y > nextLeftMinY) {
-          nextLeftMaxY = leftSegmentIntersectionPoints[i].y;
-          foundLeftMaxY = true;
-          break;
-        }
-      }
-      let nextRightMaxY = rowMaxY + 1;
-      let foundRightMaxY = false;
-      for (let i = 0; i < rightSegmentIntersectionPoints.length; i++) {
-        if (rightSegmentIntersectionPoints[i].y > nextRightMinY) {
-          nextRightMaxY = rightSegmentIntersectionPoints[i].y;
-          foundRightMaxY = true;
-          break;
-        }
-      }
+  let rowMinX = null;
+  let rowTopMinX = null;
+  let rowBottomMinX = null;
+  let rowMaxX = null;
+  let rowTopMaxX = null;
+  let rowBottomMaxX = null;
+  if (topSegmentIntersectionPoints.length > 0 && bottomSegmentIntersectionPoints.length > 0) {
+    rowTopMinX = topSegmentIntersectionPoints[0].x;
+    rowBottomMinX = bottomSegmentIntersectionPoints[0].x;
+    rowMinX = Math.min(rowTopMinX, rowBottomMinX);
+    rowTopMaxX = topSegmentIntersectionPoints[topSegmentIntersectionPoints.length - 1].x;
+    rowBottomMaxX = bottomSegmentIntersectionPoints[bottomSegmentIntersectionPoints.length - 1].x;
+    rowMaxX = Math.max(rowTopMaxX, rowBottomMaxX);
+  } else if (topSegmentIntersectionPoints.length > 0) {
+    rowTopMinX = topSegmentIntersectionPoints[0].x;
+    rowMinX = rowTopMinX;
+    rowTopMaxX = topSegmentIntersectionPoints[topSegmentIntersectionPoints.length - 1].x;
+    rowMaxX = rowTopMaxX;
+  } else if (bottomSegmentIntersectionPoints.length > 0) {
+    rowBottomMinX = bottomSegmentIntersectionPoints[0].x;
+    rowMinX = rowBottomMinX
+    rowBottomMaxX = bottomSegmentIntersectionPoints[bottomSegmentIntersectionPoints.length - 1].x;
+    rowMaxX = rowBottomMaxX;
+  } else {
+    //console.log("Could not indetify minY/maxY");
+  }
 
-      if (foundLeftMaxY && foundRightMaxY) {
-        if (nextLeftMaxY < nextRightMinY) {
-          maxY = nextLeftMaxY;
-        } else if (nextRightMaxY < nextLeftMinY) {
-          maxY = nextRightMaxY;
-        } else {
-          maxY = Math.max(nextLeftMaxY, nextRightMaxY);
-        }
-      } else if (foundLeftMaxY) {
-        maxY = nextLeftMaxY;
-      } else if (foundRightMaxY) {
-        maxY = nextRightMaxY;
-      } else {
-        maxY = null;
-      }
-
-      if (nextLeftMaxY === rowMaxY + 1 && nextRightMaxY === rowMaxY + 1) {
-        //console.log("maxY wasn't found");
+  let nextTopMinX = rowMinX;
+  let nextBottomMinX = rowMinX;
+  let j = 0;
+  while (true) {
+    //console.log("Find starting Y");
+    let foundTopMinX = false;
+    for (let i = 0; i < topSegmentIntersectionPoints.length; i++) {
+      if (topSegmentIntersectionPoints[i].x >= nextTopMinX) {
+        nextTopMinX = topSegmentIntersectionPoints[i].x;
+        foundTopMinX = true;
         break;
-      } else {
-        row.segments.push({
-          x: rowLeftVerticalSegment.x1,
-          y: minY,
-          width: rowRightVerticalSegment.x1 - rowLeftVerticalSegment.x1,
-          height: maxY - minY,
-          boards: [],
-          row: row,
-          number: j + 1,
-          remainingHeight: maxY - minY
-        });
-        nextLeftMinY = maxY + 1;
-        nextRightMinY = nextLeftMinY;
       }
-      j++;
     }
-  } else if (rowDirection === 'right') {
-    const rowLeftHorizontalSegment = {
-      x1: floorPlanBounds.minX,
-      y1: floorPlanBounds.minY + (rowNumber - 1) * boardWidth + boardWidthOffset,
-      x2: floorPlanBounds.maxX,
-      y2: floorPlanBounds.maxY + (rowNumber - 1) * boardWidth + boardWidthOffset
-    };
+    let foundBottomMinX = false;
+    for (let i = 0; i < bottomSegmentIntersectionPoints.length; i++) {
+      if (bottomSegmentIntersectionPoints[i].x >= nextBottomMinX) {
+        nextBottomMinX = bottomSegmentIntersectionPoints[i].x;
+        foundBottomMinX = true;
+        break;
+      }
+    }
+    let minX;
+    let maxX;
+    if (foundTopMinX && foundBottomMinX) {
+      minX = Math.min(nextTopMinX, nextBottomMinX);
+    } else if (foundTopMinX) {
+      minX = nextTopMinX;
+    } else if (foundBottomMinX) {
+      minX = nextBottomMinX;
+    } else {
+      maxX = null;
+    }
 
-    const rowRightHorizontalSegment = {
-      x1: floorPlanBounds.minX,
-      y1: rowRightHorizontalSegment.y1 + boardWidth,
-      x2: floorPlanBounds.maxX,
-      y2: rowRightHorizontalSegment.y1 + boardWidth
-    };
+    //console.log("Find end of segment");
+    let nextTopMaxX = rowMaxX + 1;
+    let foundTopMaxX = false;
+    for (let i = 0; i < topSegmentIntersectionPoints.length; i++) {
+      if (topSegmentIntersectionPoints[i].x > nextTopMinX) {
+        nextTopMaxX = topSegmentIntersectionPoints[i].x;
+        foundTopMaxX = true;
+        break;
+      }
+    }
+    let nextBottomMaxX = rowMaxX + 1;
+    let foundBottomMaxX = false;
+    for (let i = 0; i < bottomSegmentIntersectionPoints.length; i++) {
+      if (bottomSegmentIntersectionPoints[i].x > nextBottomMinX) {
+        nextBottomMaxX = bottomSegmentIntersectionPoints[i].x;
+        foundBottomMaxX = true;
+        break;
+      }
+    }
+
+    if (foundTopMaxX && foundBottomMaxX) {
+      if (nextTopMaxX < nextBottomMinX) {
+        maxX = nextTopMaxX;
+      } else if (nextBottomMaxX < nextTopMinX) {
+        maxX = nextBottomMaxX;
+      } else {
+        maxX = Math.max(nextTopMaxX, nextBottomMaxX);
+      }
+    } else if (foundTopMaxX) {
+      maxX = nextTopMaxX;
+    } else if (foundBottomMaxX) {
+      maxX = nextBottomMaxX;
+    } else {
+      maxX = null;
+    }
+
+    if (nextTopMaxX === rowMaxX + 1 && nextBottomMaxX === rowMaxX + 1) {
+      //console.log("maxY wasn't found");
+      break;
+    } else {
+      let segmentLength = maxX - minX;
+      row.segments.push({
+        x: minX,
+        y: rowTopHorizontalSegment.y1,
+        length: segmentLength,
+        width: rowTopHorizontalSegment.y1 - rowBottomHorizontalSegment.y1,
+        boards: [],
+        row: row,
+        number: j + 1,
+        remainingLength: segmentLength
+      });
+      nextTopMinX = maxX + 1;
+      nextBottomMinX = nextTopMinX;
+    }
+    j++;
   }
 
   if (row.segments.length > 0) {
@@ -303,7 +253,7 @@ function findAvailableSegment() {
     const row = rows[i];
     for (let j = 0; j < row.segments.length; j++) {
       const segment = row.segments[j];
-      if (segment.remainingHeight > 0) {
+      if (segment.remainingLength > 0) {
         return segment;
       }
     }
@@ -325,7 +275,7 @@ function findMaxBoardNumber() {
   return maxBoardNumber;
 }
 
-function calculatetotalFloorSquareValue() {
+function calculateTotalFloorSquareValue() {
   let totalSquare = 0;
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -333,21 +283,21 @@ function calculatetotalFloorSquareValue() {
       const segment = row.segments[j];
       for (let k = 0; k < segment.boards.length; k++) {
         const board = segment.boards[k];
-        totalSquare += board.height * board.width;
+        totalSquare += board.length * board.width;
       }
     }
   }
   return Math.round(totalSquare * 0.0001) / 100;
 }
 
-function calculatetotalRemainingSquareValue() {
+function calculateTotalRemainingSquareValue() {
   let totalSquare = 0;
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     for (let j = 0; j < row.remainings.length; j++) {
       const remaining = row.remainings[j];
       if (!remaining.reused || remaining.cut === 'both') {
-        totalSquare += remaining.height * row.segments[0].width;
+        totalSquare += remaining.length * row.segments[0].width;
       }
     }
   }
@@ -361,8 +311,8 @@ function findMinimalCutBoard(cut) {
     for (let j = 0; j < row.remainings.length; j++) {
       const remaining = row.remainings[j];
       if (remaining.cut === cut && !remaining.reused) {
-        if (minimalCutBoard == null || remaining.height < minimalCutBoard.height) {
-          if (!doNotUseSmallRemainingsCheckbox.checked || remaining.height > minBoardHeight) {
+        if (minimalCutBoard == null || remaining.length < minimalCutBoard.length) {
+          if (!doNotUseSmallRemainingsCheckbox.checked || remaining.length > minBoardLength) {
             minimalCutBoard = remaining
           }
         }
@@ -372,7 +322,7 @@ function findMinimalCutBoard(cut) {
   return minimalCutBoard;
 }
 
-function findBoardToReuse(cut, height) {
+function findBoardToReuse(cut, length) {
   let remainings = [];
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -384,37 +334,37 @@ function findBoardToReuse(cut, height) {
     }
   }
   remainings.sort((a, b) => {
-    a.height - b.height
+    a.length - b.length
   });
   for (let i = 0; i < remainings.length; i++) {
     const remaining = remainings[i];
-    if (remaining.height >= height) {
+    if (remaining.length >= length) {
       return remaining;
     }
   }
   return null;
 }
 
-function findNearBoardEndY(firstBoardEndY, currentBoardEndY) {
-  if (firstBoardEndY < currentBoardEndY) {
+function findNearBoardEndX(firstBoardEndX, currentBoardEndX) {
+  if (firstBoardEndX < currentBoardEndX) {
     while (true) {
-      if (firstBoardEndY < currentBoardEndY) {
-        firstBoardEndY += boardHeight;
+      if (firstBoardEndX < currentBoardEndX) {
+        firstBoardEndX += boardLength;
       } else {
-        firstBoardEndY -= boardHeight;
+        firstBoardEndX -= boardLength;
         break;
       }
     }
-  } else if (firstBoardEndY > currentBoardEndY) {
+  } else if (firstBoardEndX > currentBoardEndX) {
     while (true) {
-      if (firstBoardEndY > currentBoardEndY) {
-        firstBoardEndY -= boardHeight;
+      if (firstBoardEndX > currentBoardEndX) {
+        firstBoardEndX -= boardLength;
       } else {
         break;
       }
     }
   }
-  return firstBoardEndY;
+  return firstBoardEndX;
 }
 
 function findFirstBoard(previousRow, availableSegment) {
@@ -437,8 +387,8 @@ function computeNewBoard() {
   }
 
   const availableSegment = findAvailableSegment();
-  // Calculate Bord Height that need to be added
-  let currentBordHeight = boardHeight;
+  // Calculate Bord Length that need to be added
+  let currentBordLength = boardLength;
   let currentBordNumber = findMaxBoardNumber() + 1;
   if (availableSegment == null) {
     //console.log("There is no available Segments to add board");
@@ -447,14 +397,14 @@ function computeNewBoard() {
     if (availableSegment.number === 1 && availableSegment.row.number === 1 && availableSegment.boards.length === 0) {
       // This is first segment
       //console.log("Found first segment which is empty. Add first board ever");
-      if (boardHeightOffset < 0) {
+      if (boardLengthOffset < 0) {
         // need to cut first board
-        currentBordHeight = boardHeight + boardHeightOffset;
-        if (doNotUseSmallRemainingsCheckbox.checked && currentBordHeight < minBoardHeight) {
-          currentBordHeight = minBoardHeight;
+        currentBordLength = boardLength + boardLengthOffset;
+        if (doNotUseSmallRemainingsCheckbox.checked && currentBordLength < minBoardLength) {
+          currentBordLength = minBoardLength;
         }
         rows[0].remainings.push({
-          height: boardHeight - currentBordHeight, number: 1, cut: 'right', reused: false
+          length: boardLength - currentBordLength, number: 1, cut: 'right', reused: false
         });
       }
     } else {
@@ -464,7 +414,7 @@ function computeNewBoard() {
         if (arrangeModeSelect.value === 'continue') {
           let boardCutByRight = findMinimalCutBoard('left');
           if (boardCutByRight != null) {
-            currentBordHeight = boardCutByRight.height;
+            currentBordLength = boardCutByRight.length;
             currentBordNumber = boardCutByRight.number;
             boardCutByRight.reused = true;
           }
@@ -472,46 +422,46 @@ function computeNewBoard() {
           // need to find first board endY
         } else if (arrangeModeSelect.value === 'thirdShift') {
           const firstBoard = rows[0].segments[0].boards[0];
-          let firstBoardEndY = firstBoard.y + firstBoard.height;
+          let firstBoardEndX = firstBoard.x + firstBoard.length;
           if (availableSegment.row.number % 3 === 1) {
             // first row
-            let currentBoardEndY = availableSegment.y + currentBordHeight;
-            firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
-            currentBordHeight = firstBoardEndY - availableSegment.y;
+            let currentBoardEndX = availableSegment.x + currentBordLength;
+            firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
+            currentBordLength = firstBoardEndX - availableSegment.x;
           } else if (availableSegment.row.number % 3 === 2) {
             // every second row
-            let currentBoardEndY = availableSegment.y + currentBordHeight;
-            firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
-            currentBordHeight = Math.round(firstBoardEndY - availableSegment.y - boardHeight * 0.33);
-            if (currentBordHeight <= 0) {
-              currentBordHeight = Math.round(firstBoardEndY + boardHeight - availableSegment.y - boardHeight * 0.33);
+            let currentBoardEndX = availableSegment.x + currentBordLength;
+            firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
+            currentBordLength = Math.round(firstBoardEndX - availableSegment.x - boardLength * 0.33);
+            if (currentBordLength <= 0) {
+              currentBordLength = Math.round(firstBoardEndX + boardLength - availableSegment.x - boardLength * 0.33);
             }
           } else if (availableSegment.row.number % 3 === 0) {
             // every third row
-            let currentBoardEndY = availableSegment.y + currentBordHeight;
-            firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
-            currentBordHeight = Math.round(firstBoardEndY - availableSegment.y - boardHeight * 0.66);
-            if (currentBordHeight <= 0) {
-              currentBordHeight = Math.round(firstBoardEndY + boardHeight - availableSegment.y - boardHeight * 0.66);
+            let currentBoardEndX = availableSegment.x + currentBordLength;
+            firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
+            currentBordLength = Math.round(firstBoardEndX - availableSegment.x - boardLength * 0.66);
+            if (currentBordLength <= 0) {
+              currentBordLength = Math.round(firstBoardEndX + boardLength - availableSegment.x - boardLength * 0.66);
             }
           }
 
-          let boardToReuse = findBoardToReuse('left', currentBordHeight);
+          let boardToReuse = findBoardToReuse('left', currentBordLength);
           if (boardToReuse != null) {
             currentBordNumber = boardToReuse.number;
             boardToReuse.reused = true;
 
-            if (boardToReuse.height > currentBordHeight) {
+            if (boardToReuse.length > currentBordLength) {
               // need to cut reused board
               availableSegment.row.remainings.push({
-                height: boardToReuse.height - currentBordHeight, number: boardToReuse.number, cut: 'both', reused: true
+                length: boardToReuse.length - currentBordLength, number: boardToReuse.number, cut: 'both', reused: true
               });
             }
           } else {
-            if (boardHeight > currentBordHeight) {
+            if (boardLength > currentBordLength) {
               // need to cut new board
               availableSegment.row.remainings.push({
-                height: boardHeight - currentBordHeight, number: currentBordNumber, cut: 'right', reused: false
+                length: boardLength - currentBordLength, number: currentBordNumber, cut: 'right', reused: false
               });
             }
           }
@@ -519,7 +469,7 @@ function computeNewBoard() {
           if (availableSegment.row.number === 1) {
             let boardCutByRight = findMinimalCutBoard('left');
             if (boardCutByRight != null) {
-              currentBordHeight = boardCutByRight.height;
+              currentBordLength = boardCutByRight.length;
               currentBordNumber = boardCutByRight.number;
               boardCutByRight.reused = true;
             }
@@ -533,35 +483,35 @@ function computeNewBoard() {
               firstBoard = previousSegment.boards[previousSegment.boards.length - 1];
             }
 
-            let firstBoardEndY = firstBoard.y + firstBoard.height;
+            let firstBoardEndX = firstBoard.x + firstBoard.length;
             const delta = parseFloat(customArrangeBoardOffsetInput.value);//* (availableSegment.row.number - 1);
-            firstBoardEndY += delta;
+            firstBoardEndX += delta;
 
-            let currentBoardEndY = availableSegment.y + currentBordHeight;
-            firstBoardEndY = findNearBoardEndY(firstBoardEndY, currentBoardEndY);
-            currentBordHeight = firstBoardEndY - availableSegment.y;
+            let currentBoardEndX = availableSegment.x + currentBordLength;
+            firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
+            currentBordLength = firstBoardEndX - availableSegment.x;
 
-            currentBordHeight = Math.round(firstBoardEndY - availableSegment.y);
-            if (currentBordHeight <= 0) {
-              currentBordHeight = currentBordHeight + boardHeight;
+            currentBordLength = Math.round(firstBoardEndX - availableSegment.x);
+            if (currentBordLength <= 0) {
+              currentBordLength = currentBordLength + boardLength;
             }
 
-            let boardToReuse = findBoardToReuse('left', currentBordHeight);
+            let boardToReuse = findBoardToReuse('left', currentBordLength);
             if (boardToReuse != null) {
               currentBordNumber = boardToReuse.number;
               boardToReuse.reused = true;
 
-              if (boardToReuse.height > currentBordHeight) {
+              if (boardToReuse.length > currentBordLength) {
                 // need to cut reused board
                 availableSegment.row.remainings.push({
-                  height: boardToReuse.height - currentBordHeight, number: boardToReuse.number, cut: 'both', reused: true
+                  length: boardToReuse.length - currentBordLength, number: boardToReuse.number, cut: 'both', reused: true
                 });
               }
             } else {
-              if (boardHeight > currentBordHeight) {
+              if (boardLength > currentBordLength) {
                 // need to cut new board
                 availableSegment.row.remainings.push({
-                  height: boardHeight - currentBordHeight, number: currentBordNumber, cut: 'right', reused: false
+                  length: boardLength - currentBordLength, number: currentBordNumber, cut: 'right', reused: false
                 });
               }
             }
@@ -571,33 +521,33 @@ function computeNewBoard() {
     }
   }
 
-  if (availableSegment.remainingHeight >= currentBordHeight) {
+  if (availableSegment.remainingLength >= currentBordLength) {
     availableSegment.boards.push({
-      x: availableSegment.x,
-      y: availableSegment.y + availableSegment.height - availableSegment.remainingHeight,
+      x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+      y: availableSegment.y,
       width: availableSegment.width,
-      height: currentBordHeight,
+      length: currentBordLength,
       number: currentBordNumber,
-      remainingHeight: 0,
+      remainingLength: 0,
       segment: availableSegment
     });
-    availableSegment.remainingHeight -= currentBordHeight;
+    availableSegment.remainingLength -= currentBordLength;
   } else {
     // need to cut
-    const cutHeight = currentBordHeight - availableSegment.remainingHeight;
+    const cutLength = currentBordLength - availableSegment.remainingLength;
     availableSegment.boards.push({
-      x: availableSegment.x,
-      y: availableSegment.y + availableSegment.height - availableSegment.remainingHeight,
+      x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+      y: availableSegment.y,
       width: availableSegment.width,
-      height: availableSegment.remainingHeight,
+      length: availableSegment.remainingLength,
       number: currentBordNumber,
-      remainingHeight: 0,
+      remainingLength: 0,
       segment: availableSegment
     });
-    availableSegment.remainingHeight = 0;
+    availableSegment.remainingLength = 0;
 
     availableSegment.row.remainings.push({
-      height: cutHeight, number: currentBordNumber, cut: 'left', reused: false
+      length: cutLength, number: currentBordNumber, cut: 'left', reused: false
     });
 
   }
@@ -607,14 +557,12 @@ function computeNewBoard() {
 function updateStatistics() {
   let maxNumberOfBoards = findMaxBoardNumber();
   totalNumberOfBoardsValue.innerText = maxNumberOfBoards;
-  let totalSquareOfBoardsValueValue = Math.round(maxNumberOfBoards * boardHeight * boardWidth * 0.0001) / 100;
+  let totalSquareOfBoardsValueValue = Math.round(maxNumberOfBoards * boardLength * boardWidth * 0.0001) / 100;
   totalSquareOfBoardsValue.innerText = totalSquareOfBoardsValueValue;
-  totalFloorSquareValue.innerText = calculatetotalFloorSquareValue();
-  totalRemainingSquareValue.innerText = calculatetotalRemainingSquareValue();
+  totalFloorSquareValue.innerText = calculateTotalFloorSquareValue();
+  totalRemainingSquareValue.innerText = calculateTotalRemainingSquareValue();
   totalCostValue.innerText = totalSquareOfBoardsValueValue * boardCost;
 }
-
-
 
 function exportPdf() {
   // Convert the canvas to a data URL (base64-encoded image)
@@ -622,7 +570,7 @@ function exportPdf() {
 
   // Create a new jsPDF instance
   // Assuming the user includes jsPDF via the CDN, we can use:
-  const { jsPDF } = window.jspdf; // from the global namespace
+  const {jsPDF} = window.jspdf; // from the global namespace
   const pdf = new jsPDF({
     orientation: 'landscape', // or 'portrait'
     unit: 'px', // you can also use 'pt', 'mm', etc.
@@ -636,4 +584,43 @@ function exportPdf() {
 
   // Download the PDF
   pdf.save('floor-plan.pdf');
+}
+
+function addALine() {
+  const x1 = parseInt(addALineStartXInput.value);
+  const y1 = parseInt(addALineStartYInput.value);
+  const x2 = parseInt(addALineEndXInput.value);
+  const y2 = parseInt(addALineEndYInput.value);
+
+  // Create a line object and push to floorPlanLines
+  const newLine = {x1, y1, x2, y2};
+  floorPlanLines.push(newLine);
+
+  // Recalculate bounds and corners, then draw
+  floorPlanBounds = getFloorPlanBounds();
+  cornerPoints = getCornerPoints();
+  drawCanvas();
+}
+
+function addARectangle() {
+
+  const x1 = parseInt(addARectangleStartXInput.value);
+  const y1 = parseInt(addARectangleStartYInput.value);
+  const x2 = parseInt(addARectangleEndXInput.value);
+  const y2 = parseInt(addARectangleEndYInput.value);
+
+  const rectLines = [
+    {x1: x1, y1: y1, x2: x2, y2: y1}, // top edge
+    {x1: x2, y1: y1, x2: x2, y2: y2}, // right edge
+    {x1: x2, y1: y2, x2: x1, y2: y2}, // bottom edge
+    {x1: x1, y1: y2, x2: x1, y2: y1}  // left edge
+  ];
+
+  // Push them into floorPlanLines
+  rectLines.forEach(line => floorPlanLines.push(line));
+
+  // Recalculate bounds and corners, then draw
+  floorPlanBounds = getFloorPlanBounds();
+  cornerPoints = getCornerPoints();
+  drawCanvas();
 }

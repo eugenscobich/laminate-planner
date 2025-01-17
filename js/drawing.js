@@ -4,24 +4,12 @@ const ctx = floorCanvas.getContext('2d');
 let scale = 1;
 let panOffset = {x: 0, y: 0};
 let isPanning = false;
-let wasMoving = false;
 let panStart = {x: 0, y: 0};
 
 function resizeCanvas() {
-
-  // Make it visually fill the positioned parent
-  floorCanvas.style.width ='100%';
-  //floorCanvas.style.height='100%';
-  // ...then set the internal size to match
-  floorCanvas.width  = floorCanvas.offsetWidth;
+  floorCanvas.style.width = '100%';
+  floorCanvas.width = floorCanvas.offsetWidth;
   floorCanvas.height = window.innerHeight - canvasContainer.offsetTop - 16;
-  /*
-  const viewportWidth = window.innerWidth - (window.innerWidth / 12) * 3 - 26;
-  const viewportHeight = window.innerHeight - canvasContainer.offsetTop - 8; // Adjust for margins or other elements
-  floorCanvas.width = viewportWidth;
-  floorCanvas.height = viewportHeight;
-
-   */
 }
 
 // Call resizeCanvas on page load
@@ -46,10 +34,8 @@ function drawCanvas() {
   drawFloorPlanLines();
   ctx.restore();
 
-  drawCornerPoints(); // todo remove
   drawParquetBoards();
-  drawArrows(); // todo remove
-  drawSelectedCorner();
+  drawArrows();
   ctx.restore();
 }
 
@@ -79,7 +65,6 @@ floorCanvas.addEventListener('mousedown', function (e) {
   isPanning = true;
   panStart.x = e.clientX - panOffset.x;
   panStart.y = e.clientY - panOffset.y;
-  wasMoving = false;
 });
 
 floorCanvas.addEventListener('mousemove', function (e) {
@@ -87,7 +72,6 @@ floorCanvas.addEventListener('mousemove', function (e) {
     panOffset.x = e.clientX - panStart.x;
     panOffset.y = e.clientY - panStart.y;
     drawCanvas();
-    wasMoving = true;
   }
 });
 
@@ -98,75 +82,6 @@ floorCanvas.addEventListener('mouseup', function (e) {
 floorCanvas.addEventListener('mouseleave', function (e) {
   isPanning = false;
 });
-
-// Corner Selection
-floorCanvas.addEventListener('click', function (e) {
-  if (isPanning) {
-    return;
-  } // Prevent corner selection during panning
-  if (wasMoving) {
-    return;
-  }
-
-  const rect = floorCanvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left - panOffset.x) / scale;
-  const y = (floorCanvas.height - (e.clientY - rect.top - panOffset.y)) / scale;
-
-  // Find the nearest intersection point within a certain radius
-  const radius = 5 / scale; // 5 pixels tolerance, adjust as needed
-  let nearestPoint = null;
-  let minDistance = Infinity;
-
-  cornerPoints.forEach(point => {
-    const dx = point.x - x;
-    const dy = point.y - y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    if (distance < radius && distance < minDistance) {
-      minDistance = distance;
-      nearestPoint = point;
-    }
-  });
-
-  if (nearestPoint) {
-    selectedCorner = nearestPoint;
-  }
-
-  drawCanvas();
-});
-
-function drawSelectedCorner() {
-  if (selectedCorner) {
-    ctx.save();
-    ctx.translate(panOffset.x, panOffset.y);
-    ctx.beginPath();
-    ctx.fillStyle = 'red';
-    ctx.arc(
-        selectedCorner.x * scale,
-        floorCanvas.height - selectedCorner.y * scale,
-        5,
-        0,
-        2 * Math.PI
-    );
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
-function drawCornerPoints() {
-  if (cornerPoints && cornerPoints.length > 0) {
-    ctx.save();
-    ctx.translate(panOffset.x, panOffset.y);
-    ctx.scale(scale, -scale);
-    ctx.translate(0, -floorCanvas.height / scale);
-    ctx.fillStyle = 'blue';
-    cornerPoints.forEach(point => {
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 2 / scale, 0, 2 * Math.PI);
-      ctx.fill();
-    });
-    ctx.restore();
-  }
-}
 
 // Function to render floor plan lines
 function drawFloorPlanLines() {
@@ -234,7 +149,7 @@ function drawParquetBoards() {
     rows.forEach(row => {
       row.segments.forEach(segment => {
         ctx.beginPath();
-        ctx.rect(segment.x, segment.y, segment.width, segment.height);
+        ctx.rect(segment.x, segment.y, segment.length, -segment.width);
         ctx.fillStyle = 'rgba(42,136,165,0.2)';
         ctx.fill();
         ctx.lineWidth = 1 / scale; // Adjust line width based on scale
@@ -255,8 +170,8 @@ function drawParquetBoards() {
 
 function drawBoard(board) {
   ctx.beginPath();
-  ctx.rect(board.x, board.y, board.width, board.height);
-  if (board.height < minBoardHeight) {
+  ctx.rect(board.x, board.y, board.length, -board.width);
+  if (board.length < minboardLength) {
     ctx.fillStyle = 'rgba(165,140,42,0.7)';
   } else {
     ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
@@ -272,7 +187,7 @@ function drawBoard(board) {
     ctx.textBaseline = 'middle';
     ctx.save();
     ctx.scale(1, -1); // Flip text vertically
-    ctx.fillText(board.number.toString(), board.x + board.width / 2, -(board.y + board.height / 2));
+    ctx.fillText(board.number.toString(), board.x + board.length / 2, -(board.y - board.width / 2));
     ctx.restore();
   }
 }
@@ -280,76 +195,23 @@ function drawBoard(board) {
 function drawRemainings(row) {
   if (row.remainings.length > 0) {
     const space = 40;
-    if (row.direction === 'up') {
-      let offsetTop = floorPlanBounds.maxY + space;
-      let offsetBottom = floorPlanBounds.minY - space;
-      row.remainings.forEach(remaining => {
-        if (remaining.reused === false) {
-          if (remaining.cut === 'left') {
-            const x = row.segments[0].x;
-            const y = offsetTop;
-            const width = row.segments[0].width;
-            const height = remaining.height;
-            ctx.beginPath();
-            ctx.rect(x, y, width, height);
-            ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
-            ctx.fill();
-            ctx.lineWidth = 1 / scale; // Adjust line width based on scale
-            ctx.strokeStyle = 'black';
-            ctx.stroke();
-            offsetTop += remaining.height + space;
-
-            if (showNumbers) {
-              ctx.fillStyle = 'black';
-              ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.save();
-              ctx.scale(1, -1); // Flip text vertically
-              ctx.fillText(remaining.number.toString(), x + width / 2, -(y + height / 2));
-              ctx.restore();
-            }
-
-          } else if (remaining.cut === 'right') {
-            offsetBottom -= remaining.height;
-            const x = row.segments[0].x;
-            const y = offsetBottom;
-            const width = row.segments[0].width;
-            const height = remaining.height;
-            ctx.beginPath();
-            ctx.rect(x, y, width, height);
-            ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
-            ctx.fill();
-            ctx.lineWidth = 1 / scale; // Adjust line width based on scale
-            ctx.strokeStyle = 'black';
-            ctx.stroke();
-            offsetBottom -= space;
-
-            if (showNumbers) {
-              ctx.fillStyle = 'black';
-              ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.save();
-              ctx.scale(1, -1); // Flip text vertically
-              ctx.fillText(remaining.number.toString(), x + width / 2, -(y + height / 2));
-              ctx.restore();
-            }
-          }
-        } else if (remaining.cut === 'both') {
-          offsetBottom -= remaining.height;
-          const x = row.segments[0].x;
-          const y = offsetBottom;
+    let offsetRight = floorPlanBounds.maxX + space;
+    let offsetLeft = floorPlanBounds.minX - space;
+    row.remainings.forEach(remaining => {
+      if (remaining.reused === false) {
+        if (remaining.cut === 'left') {
+          const x = offsetRight;
+          const y = row.segments[0].y;
           const width = row.segments[0].width;
-          const height = remaining.height;
+          const length = remaining.length;
           ctx.beginPath();
-          ctx.rect(x, y, width, height);
-          ctx.fillStyle = 'rgba(42,165,44,0.7)';
+          ctx.rect(x, y, length, -width);
+          ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
           ctx.fill();
           ctx.lineWidth = 1 / scale; // Adjust line width based on scale
           ctx.strokeStyle = 'black';
           ctx.stroke();
-          offsetBottom -= space;
+          offsetRight += remaining.length + space;
 
           if (showNumbers) {
             ctx.fillStyle = 'black';
@@ -358,13 +220,62 @@ function drawRemainings(row) {
             ctx.textBaseline = 'middle';
             ctx.save();
             ctx.scale(1, -1); // Flip text vertically
-            ctx.fillText(remaining.number.toString(), x + width / 2, -(y + height / 2));
+            ctx.fillText(remaining.number.toString(), x + length / 2, -(y - width / 2));
+            ctx.restore();
+          }
+
+        } else if (remaining.cut === 'right') {
+          offsetLeft -= remaining.length;
+          const x = offsetLeft;
+          const y = row.segments[0].y;
+          const width = row.segments[0].width;
+          const length = remaining.length;
+          ctx.beginPath();
+          ctx.rect(x, y, length, -width);
+          ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';
+          ctx.fill();
+          ctx.lineWidth = 1 / scale; // Adjust line width based on scale
+          ctx.strokeStyle = 'black';
+          ctx.stroke();
+          offsetLeft -= space;
+
+          if (showNumbers) {
+            ctx.fillStyle = 'black';
+            ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.scale(1, -1); // Flip text vertically
+            ctx.fillText(remaining.number.toString(), x + length / 2, -(y - width / 2));
             ctx.restore();
           }
         }
-      });
+      } else if (remaining.cut === 'both') {
+        offsetLeft -= remaining.length;
+        const x = offsetLeft;
+        const y = row.segments[0].y;
+        const width = row.segments[0].width;
+        const length = remaining.length;
+        ctx.beginPath();
+        ctx.rect(x, y, length, -width);
+        ctx.fillStyle = 'rgba(42,165,44,0.7)';
+        ctx.fill();
+        ctx.lineWidth = 1 / scale; // Adjust line width based on scale
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        offsetLeft -= space;
 
-      floorPlanBounds.maxY
-    }
+        if (showNumbers) {
+          ctx.fillStyle = 'black';
+          ctx.font = `${12 / scale}px Arial`; // Adjust font size based on scale
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.save();
+          ctx.scale(1, -1); // Flip text vertically
+          ctx.fillText(remaining.number.toString(), x + length / 2, -(y - width / 2));
+          ctx.restore();
+        }
+      }
+    });
   }
 }

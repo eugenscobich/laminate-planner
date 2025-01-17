@@ -10,13 +10,13 @@ const totalCostValue = document.getElementById('totalCostValue');
 const showNumbersCheckbox = document.getElementById('showNumbersCheckbox');
 const customArrangeBoardOffsetInput = document.getElementById('customArrangeBoardOffsetInput');
 const customArrangeBoardOffsetValue = document.getElementById('customArrangeBoardOffsetValue');
-const heightInput = document.getElementById('heightInput');
+const lengthInput = document.getElementById('lengthInput');
 const widthInput = document.getElementById('widthInput');
 const boardWidthOffsetInput = document.getElementById('boardWidthOffsetInput');
 const boardWidthOffsetValue = document.getElementById('boardWidthOffsetValue');
-const boardHeightOffsetInput = document.getElementById('boardHeightOffsetInput');
-const boardHeightOffsetValue = document.getElementById('boardHeightOffsetValue');
-const minBoardHeightInput = document.getElementById('minBoardHeightInput');
+const boardLengthOffsetInput = document.getElementById('boardLengthOffsetInput');
+const boardLengthOffsetValue = document.getElementById('boardLengthOffsetValue');
+const minboardLengthInput = document.getElementById('minboardLengthInput');
 const doNotUseSmallRemainingsCheckbox = document.getElementById('doNotUseSmallRemainingsCheckbox');
 const totalNumberOfBoardsValue = document.getElementById('totalNumberOfBoardsValue');
 const totalFloorSquareValue = document.getElementById('totalFloorSquareValue');
@@ -47,48 +47,26 @@ const addARectangleModal = new bootstrap.Modal('#addARectangleModal', {
   keyboard: false
 })
 
-
-let selectedCorner = null;
 let floorPlanBounds = null;
+let originalFloorPlanLines = [];
 let floorPlanLines = [];
-let cornerPoints = [];
-
+let currentRotateAngle = 0;
 let rows = [];
-let boardHeight = null;
+let boardLength = null;
 let boardWidth = null;
 let boardWidthOffset = 0;
-let boardHeightOffset = 0;
-let minBoardHeight = null;
+let boardLengthOffset = 0;
+let minboardLength = null;
 let boardCost = 100;
 let showNumbers = true;
 
 function reset() {
   rows = [];
-  boardHeight = parseFloat(heightInput.value);
+  boardLength = parseFloat(lengthInput.value);
   boardWidth = parseFloat(widthInput.value);
   boardWidthOffset = parseFloat(boardWidthOffsetInput.value);
-  boardHeightOffset = parseFloat(boardHeightOffsetInput.value);
-  minBoardHeight = parseFloat(minBoardHeightInput.value);
+  boardLengthOffset = parseFloat(boardLengthOffsetInput.value);
+  minboardLength = parseFloat(minboardLengthInput.value);
   boardCost = parseFloat(boardCostInput.value);
   showNumbers = showNumbersCheckbox.checked;
-}
-
-
-
-function findRowDirection() {
-  if (selectedCorner.x === floorPlanBounds.minX && selectedCorner.y === floorPlanBounds.minY) {
-    return 'up';
-  }
-
-  if (selectedCorner.x === floorPlanBounds.minX && selectedCorner.y === floorPlanBounds.maxY) {
-    return 'right';
-  }
-
-  if (selectedCorner.x === floorPlanBounds.maxX && selectedCorner.y === floorPlanBounds.minY) {
-    return 'left';
-  }
-
-  if (selectedCorner.x === floorPlanBounds.maxX && selectedCorner.y === floorPlanBounds.maxY) {
-    return 'down';
-  }
 }

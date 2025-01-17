@@ -37,10 +37,10 @@ function loadDXFFile(file) {
       panOffset.y = -extents.minY * scale + (canvasHeight - drawingHeight * scale) / 2;
 
       // Extract line segments from DXF entities
-      floorPlanLines = extractLinesFromDXF(dxfData.entities);
-      isFloorPlanLoaded = true;
+      originalFloorPlanLines = extractLinesFromDXF(dxfData.entities);
+      floorPlanLines = originalFloorPlanLines.map(line => ({...line}));
       floorPlanBounds = getFloorPlanBounds();
-      cornerPoints = getCornerPoints();
+      isFloorPlanLoaded = true;
       drawCanvas();
     } catch (error) {
       alert('Failed to parse DXF file. See console for details.');

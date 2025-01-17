@@ -52,7 +52,7 @@ function rotatePoint(x, y, cx, cy, angleRad) {
   const ry = tx * Math.sin(angleRad) + ty * Math.cos(angleRad);
   // Translate back
   return {
-    x: rx + cx,
-    y: ry + cy
-  };
+    x: Math.round(rx + cx),
+    y: Math.round(ry + cy)
+  }
 }
