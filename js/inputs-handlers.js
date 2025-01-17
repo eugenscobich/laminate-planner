@@ -1,19 +1,23 @@
-boardWidthOffsetInput.addEventListener('input', () => {
-  updateBoardWidthOffsetInput();
+widthInput.addEventListener('change', () => {
+  boardWidthOffsetRangeInput.min = -parseInt(widthInput.value);
+  boardWidthOffsetInput.min = -parseInt(widthInput.value);
+  update();
 })
 
-function updateBoardWidthOffsetInput() {
-  boardWidthOffsetValue.textContent = boardWidthOffsetInput.value;
-  reset();
-  completeTheFloor();
-}
-
-boardWidthOffsetInput.addEventListener('wheel', function (e) {
+boardWidthOffsetInput.addEventListener('change', () => {
+  boardWidthOffsetRangeInput.value = boardWidthOffsetInput.value;
+  update();
+})
+boardWidthOffsetRangeInput.addEventListener('input', () => {
+  boardWidthOffsetInput.value = boardWidthOffsetRangeInput.value;
+  update();
+})
+boardWidthOffsetRangeInput.addEventListener('wheel', function (e) {
   e.preventDefault();
   const step = 1;
-  let currentValue = parseFloat(boardWidthOffsetInput.value) || 0;
-  const minValue = parseFloat(boardWidthOffsetInput.min) || -Infinity;
-  const maxValue = parseFloat(boardWidthOffsetInput.max) || Infinity;
+  let currentValue = parseInt(boardWidthOffsetRangeInput.value) || 0;
+  const minValue = parseInt(boardWidthOffsetRangeInput.min) || -Infinity;
+  const maxValue = parseInt(boardWidthOffsetRangeInput.max) || Infinity;
 
   if (e.deltaY < 0) {
     currentValue += step;
@@ -27,26 +31,36 @@ boardWidthOffsetInput.addEventListener('wheel', function (e) {
     }
   }
   boardWidthOffsetInput.value = currentValue;
-
-  updateBoardWidthOffsetInput();
+  boardWidthOffsetRangeInput.value = currentValue;
+  update();
 });
 
-boardLengthOffsetInput.addEventListener('input', () => {
-  updateboardLengthOffsetInput();
+lengthInput.addEventListener('change', () => {
+  let length = parseInt(lengthInput.value);
+  boardLengthOffsetRangeInput.min = -length;
+  boardLengthOffsetInput.min = -length;
+  customArrangeBoardOffsetInput.min = -length;
+  customArrangeBoardOffsetInput.max = length;
+
+  customArrangeBoardOffsetRangeInput.min = -length;
+  customArrangeBoardOffsetRangeInput.max = length;
+  update();
 })
 
-function updateboardLengthOffsetInput() {
-  boardLengthOffsetValue.textContent = boardLengthOffsetInput.value;
-  reset();
-  completeTheFloor();
-}
-
-boardLengthOffsetInput.addEventListener('wheel', function (e) {
+boardLengthOffsetInput.addEventListener('change', () => {
+  boardLengthOffsetRangeInput.value = boardLengthOffsetInput.value;
+  update();
+})
+boardLengthOffsetRangeInput.addEventListener('input', () => {
+  boardLengthOffsetInput.value = boardLengthOffsetRangeInput.value;
+  update();
+})
+boardLengthOffsetRangeInput.addEventListener('wheel', function (e) {
   e.preventDefault();
   const step = 1;
-  let currentValue = parseFloat(boardLengthOffsetInput.value) || 0;
-  const minValue = parseFloat(boardLengthOffsetInput.min) || -Infinity;
-  const maxValue = parseFloat(boardLengthOffsetInput.max) || Infinity;
+  let currentValue = parseInt(boardLengthOffsetRangeInput.value) || 0;
+  const minValue = parseInt(boardLengthOffsetRangeInput.min) || -Infinity;
+  const maxValue = parseInt(boardLengthOffsetRangeInput.max) || Infinity;
 
   if (e.deltaY < 0) {
     currentValue += step;
@@ -59,27 +73,29 @@ boardLengthOffsetInput.addEventListener('wheel', function (e) {
       currentValue = minValue;
     }
   }
+  boardLengthOffsetRangeInput.value = currentValue;
   boardLengthOffsetInput.value = currentValue;
-
-  updateboardLengthOffsetInput();
+  update();
 });
 
-customArrangeBoardOffsetInput.addEventListener('input', function () {
-  updateCustomArrangeBoardOffsetInput();
+arrangeModeSelect.addEventListener('change', function () {
+  update();
 });
 
-function updateCustomArrangeBoardOffsetInput() {
-  customArrangeBoardOffsetValue.textContent = customArrangeBoardOffsetInput.value;
-  reset();
-  completeTheFloor();
-}
-
-customArrangeBoardOffsetInput.addEventListener('wheel', function (e) {
+customArrangeBoardOffsetInput.addEventListener('change', function () {
+  customArrangeBoardOffsetRangeInput.value = customArrangeBoardOffsetInput.value;
+  update();
+});
+customArrangeBoardOffsetRangeInput.addEventListener('input', function () {
+  customArrangeBoardOffsetInput.value = customArrangeBoardOffsetRangeInput.value;
+  update();
+});
+customArrangeBoardOffsetRangeInput.addEventListener('wheel', function (e) {
   e.preventDefault();
   const step = 1;
-  let currentValue = parseFloat(customArrangeBoardOffsetInput.value) || 0;
-  const minValue = parseFloat(customArrangeBoardOffsetInput.min) || -Infinity;
-  const maxValue = parseFloat(customArrangeBoardOffsetInput.max) || Infinity;
+  let currentValue = parseInt(customArrangeBoardOffsetRangeInput.value) || 0;
+  const minValue = parseInt(customArrangeBoardOffsetRangeInput.min) || -Infinity;
+  const maxValue = parseInt(customArrangeBoardOffsetRangeInput.max) || Infinity;
 
   if (e.deltaY < 0) {
     currentValue += step;
@@ -93,25 +109,13 @@ customArrangeBoardOffsetInput.addEventListener('wheel', function (e) {
     }
   }
   customArrangeBoardOffsetInput.value = currentValue;
+  customArrangeBoardOffsetRangeInput.value = currentValue;
 
-  updateCustomArrangeBoardOffsetInput();
+  update();
 });
 
-lengthInput.addEventListener('change', () => {
-  boardLengthOffsetInput.min = lengthInput.value * -1;
-  reset();
-  completeTheFloor();
-})
-
-widthInput.addEventListener('change', () => {
-  boardWidthOffsetInput.min = widthInput.value * -1;
-  reset();
-  completeTheFloor();
-})
-
-minboardLengthInput.addEventListener('change', () => {
-  reset();
-  completeTheFloor();
+minBoardLengthInput.addEventListener('change', () => {
+  update();
 })
 
 addRowButton.addEventListener('click', function () {
@@ -123,8 +127,7 @@ addBoardButton.addEventListener('click', function () {
 });
 
 fullCompleteButton.addEventListener('click', function () {
-  reset();
-  completeTheFloor();
+  update();
 });
 
 showNumbersCheckbox.addEventListener('change', function () {
@@ -133,14 +136,9 @@ showNumbersCheckbox.addEventListener('change', function () {
 });
 
 doNotUseSmallRemainingsCheckbox.addEventListener('change', function () {
-  reset();
-  completeTheFloor();
+  update();
 });
 
-arrangeModeSelect.addEventListener('change', function () {
-  reset();
-  completeTheFloor();
-});
 
 rotateBy45Button.addEventListener('click', function () {
   reset();

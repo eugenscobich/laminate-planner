@@ -171,7 +171,7 @@ function drawParquetBoards() {
 function drawBoard(board) {
   ctx.beginPath();
   ctx.rect(board.x, board.y, board.length, -board.width);
-  if (board.length < minboardLength) {
+  if (board.length < minBoardLength) {
     ctx.fillStyle = 'rgba(165,140,42,0.7)';
   } else {
     ctx.fillStyle = 'rgba(165, 42, 42, 0.7)';

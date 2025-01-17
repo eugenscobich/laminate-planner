@@ -62,9 +62,6 @@ function completeTheFloor() {
       break;
     }
   }
-
-  updateStatistics();
-  drawCanvas();
 }
 
 function computeRow() {
@@ -89,9 +86,9 @@ function computeNewRow() {
 
   const rowTopHorizontalSegment = {
     x1: floorPlanBounds.minX,
-    y1: floorPlanBounds.maxY - (rowNumber - 1) * boardWidth + boardWidthOffset,
+    y1: floorPlanBounds.maxY - (rowNumber - 1) * boardWidth - boardWidthOffset,
     x2: floorPlanBounds.maxX,
-    y2: floorPlanBounds.maxY - (rowNumber - 1) * boardWidth + boardWidthOffset
+    y2: floorPlanBounds.maxY - (rowNumber - 1) * boardWidth - boardWidthOffset
   };
 
   const rowBottomHorizontalSegment = {
@@ -418,54 +415,16 @@ function computeNewBoard() {
             currentBordNumber = boardCutByRight.number;
             boardCutByRight.reused = true;
           }
-        } else if (arrangeModeSelect.value === 'halfShift') {
-          // need to find first board endY
-        } else if (arrangeModeSelect.value === 'thirdShift') {
-          const firstBoard = rows[0].segments[0].boards[0];
-          let firstBoardEndX = firstBoard.x + firstBoard.length;
-          if (availableSegment.row.number % 3 === 1) {
-            // first row
-            let currentBoardEndX = availableSegment.x + currentBordLength;
-            firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
-            currentBordLength = firstBoardEndX - availableSegment.x;
-          } else if (availableSegment.row.number % 3 === 2) {
-            // every second row
-            let currentBoardEndX = availableSegment.x + currentBordLength;
-            firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
-            currentBordLength = Math.round(firstBoardEndX - availableSegment.x - boardLength * 0.33);
-            if (currentBordLength <= 0) {
-              currentBordLength = Math.round(firstBoardEndX + boardLength - availableSegment.x - boardLength * 0.33);
-            }
-          } else if (availableSegment.row.number % 3 === 0) {
-            // every third row
-            let currentBoardEndX = availableSegment.x + currentBordLength;
-            firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
-            currentBordLength = Math.round(firstBoardEndX - availableSegment.x - boardLength * 0.66);
-            if (currentBordLength <= 0) {
-              currentBordLength = Math.round(firstBoardEndX + boardLength - availableSegment.x - boardLength * 0.66);
-            }
-          }
-
-          let boardToReuse = findBoardToReuse('left', currentBordLength);
-          if (boardToReuse != null) {
-            currentBordNumber = boardToReuse.number;
-            boardToReuse.reused = true;
-
-            if (boardToReuse.length > currentBordLength) {
-              // need to cut reused board
-              availableSegment.row.remainings.push({
-                length: boardToReuse.length - currentBordLength, number: boardToReuse.number, cut: 'both', reused: true
-              });
-            }
+        } else {
+          let delta;
+          if (arrangeModeSelect.value === 'halfShift') {
+            delta = boardLength / 2;
+          } else if (arrangeModeSelect.value === 'thirdShift') {
+            delta = boardLength / 3;
           } else {
-            if (boardLength > currentBordLength) {
-              // need to cut new board
-              availableSegment.row.remainings.push({
-                length: boardLength - currentBordLength, number: currentBordNumber, cut: 'right', reused: false
-              });
-            }
+            delta = parseInt(customArrangeBoardOffsetInput.value);//* (availableSegment.row.number - 1);
           }
-        } else if (arrangeModeSelect.value === 'custom') {
+
           if (availableSegment.row.number === 1) {
             let boardCutByRight = findMinimalCutBoard('left');
             if (boardCutByRight != null) {
@@ -484,7 +443,7 @@ function computeNewBoard() {
             }
 
             let firstBoardEndX = firstBoard.x + firstBoard.length;
-            const delta = parseFloat(customArrangeBoardOffsetInput.value);//* (availableSegment.row.number - 1);
+
             firstBoardEndX += delta;
 
             let currentBoardEndX = availableSegment.x + currentBordLength;
@@ -556,12 +515,12 @@ function computeNewBoard() {
 
 function updateStatistics() {
   let maxNumberOfBoards = findMaxBoardNumber();
-  totalNumberOfBoardsValue.innerText = maxNumberOfBoards;
+  totalNumberOfBoardsValue.value = maxNumberOfBoards;
   let totalSquareOfBoardsValueValue = Math.round(maxNumberOfBoards * boardLength * boardWidth * 0.0001) / 100;
-  totalSquareOfBoardsValue.innerText = totalSquareOfBoardsValueValue;
-  totalFloorSquareValue.innerText = calculateTotalFloorSquareValue();
-  totalRemainingSquareValue.innerText = calculateTotalRemainingSquareValue();
-  totalCostValue.innerText = totalSquareOfBoardsValueValue * boardCost;
+  totalSquareOfBoardsValue.value = totalSquareOfBoardsValueValue;
+  totalFloorSquareValue.value = calculateTotalFloorSquareValue();
+  totalRemainingSquareValue.value = calculateTotalRemainingSquareValue();
+  totalCostValue.value = totalSquareOfBoardsValueValue * boardCost;
 }
 
 function exportPdf() {
@@ -622,5 +581,12 @@ function addARectangle() {
   // Recalculate bounds and corners, then draw
   floorPlanBounds = getFloorPlanBounds();
   cornerPoints = getCornerPoints();
+  drawCanvas();
+}
+
+function update() {
+  reset();
+  completeTheFloor();
+  updateStatistics();
   drawCanvas();
 }

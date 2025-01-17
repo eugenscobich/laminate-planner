@@ -113,7 +113,7 @@
                     <div class="col-7">
                       <div class="input-group">
                         <input id="boardWidthOffsetInput" class="form-control" max="0" min="-191" type="number" value="0">
-                        <span class="input-group-text"><span id="boardWidthOffsetValue">0</span>&nbsp;mm</span>
+                        <span class="input-group-text">mm</span>
                       </div>
                       <input id="boardWidthOffsetRangeInput" class="form-range" max="0" min="-191" type="range" value="0">
                     </div>
@@ -122,10 +122,10 @@
                     <label for="boardLengthOffsetInput" class="col-5 col-form-label">Board Initial Cut:</label>
                     <div class="col-7">
                       <div class="input-group">
-                        <input id="boardLengthOffsetInput" class="form-control" max="0" min="-191" type="number" value="0">
-                        <span class="input-group-text"><span id="boardLengthOffsetValue">0</span>&nbsp;mm</span>
+                        <input id="boardLengthOffsetInput" class="form-control" max="0" min="-1380" type="number" value="0">
+                        <span class="input-group-text">mm</span>
                       </div>
-                      <input id="boardLengthOffsetRangeInput" class="form-range" max="0" min="-191" type="range" value="0">
+                      <input id="boardLengthOffsetRangeInput" class="form-range" max="0" min="-1380" type="range" value="0">
                     </div>
                   </div>
                   <div class="row pb-2">
@@ -135,10 +135,10 @@
                     </div>
                   </div>
                   <div class="row pb-2">
-                    <label for="minboardLengthInput" class="col-5 col-form-label">Minimal Board reimagining:</label>
+                    <label for="minBoardLengthInput" class="col-5 col-form-label">Minimal Board reimagining:</label>
                     <div class="col-7">
                       <div class="input-group">
-                        <input id="minboardLengthInput" class="form-control" min="1" type="number" value="191">
+                        <input id="minBoardLengthInput" class="form-control" min="1" type="number" value="191">
                         <span class="input-group-text">mm</span>
                       </div>
                     </div>
@@ -160,7 +160,7 @@
                     <div class="col-7">
                       <div class="input-group">
                         <input id="customArrangeBoardOffsetInput" class="form-control" max="1380" min="-1380" type="number" value="0">
-                        <span class="input-group-text"><span id="customArrangeBoardOffsetValue">0</span>&nbsp;mm</span>
+                        <span class="input-group-text">mm</span>
                       </div>
                       <input id="customArrangeBoardOffsetRangeInput" class="form-range" max="1380" min="-1380" type="range" value="0">
                     </div>
@@ -202,9 +202,9 @@
                 <div class="accordion-body">
                   <div class="row">
                     <div class="btn-group" role="group" aria-label="Basic example">
+                      <button type="button" class="btn btn-primary" id="fullCompleteButton">Full Complete</button>
                       <button type="button" class="btn btn-primary" id="addRowButton">Add Row</button>
                       <button type="button" class="btn btn-primary" id="addBoardButton">Add Board</button>
-                      <button type="button" class="btn btn-primary" id="fullCompleteButton">Full Complete</button>
                       <button type="button" class="btn btn-primary" id="exportButton">Export</button>
                     </div>
                   </div>
@@ -261,7 +261,7 @@
                   </div>
 
                   <div class="row">
-                    <label for="totalCostValue" class="col-7 col-form-label">Total remaining square:</label>
+                    <label for="totalCostValue" class="col-7 col-form-label">Total cost:</label>
                     <div class="col-3">
                       <input type="text" readonly class="form-control-plaintext" style="text-align:right;" id="totalCostValue" value="0">
                     </div>
