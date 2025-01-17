@@ -31,12 +31,14 @@ function drawCanvas() {
   ctx.scale(scale, -scale); // Flip Y-axis to match coordinate system
   ctx.translate(0, -floorCanvas.height / scale);
 
-  drawFloorPlanLines();
-  ctx.restore();
+  const angleRad = currentRotateViewPortAngle  * Math.PI / 180;
+  ctx.rotate(angleRad);
 
+  drawFloorPlanLines();
   drawParquetBoards();
-  drawArrows();
+
   ctx.restore();
+  drawArrows();
 }
 
 // Zooming
@@ -142,10 +144,7 @@ function drawArrows() {
 
 function drawParquetBoards() {
   if (rows.length > 0) {
-    ctx.save();
-    ctx.translate(panOffset.x, panOffset.y);
-    ctx.scale(scale, -scale);
-    ctx.translate(0, -floorCanvas.height / scale);
+
     rows.forEach(row => {
       row.segments.forEach(segment => {
         ctx.beginPath();
@@ -164,7 +163,7 @@ function drawParquetBoards() {
       });
       drawRemainings(row);
     });
-    ctx.restore();
+
   }
 }
 

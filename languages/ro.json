@@ -65,5 +65,6 @@
   "bottomLeftY": "Colțul stânga-jos Y:",
   "topRightX": "Colțul dreapta-sus X:",
   "topRightY": "Colțul dreapta-sus Y:",
-  "modalAddRectangleButton": "Adaugă dreptunghi"
+  "modalAddRectangleButton": "Adaugă dreptunghi",
+  "rotateViewPortBy45Label": "Rotire cu 45°"
 }

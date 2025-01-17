@@ -23,6 +23,7 @@ const totalFloorSquareValue = document.getElementById('totalFloorSquareValue');
 const totalSquareOfBoardsValue = document.getElementById('totalSquareOfBoardsValue');
 const totalRemainingSquareValue = document.getElementById('totalRemainingSquareValue');
 const arrangeModeSelect = document.getElementById('arrangeModeSelect');
+const rotateViewPortBy45 = document.getElementById('rotateViewPortBy45');
 
 const rotateBy45Button = document.getElementById('rotateBy45');
 const addALineButton = document.getElementById('addALine');
@@ -51,6 +52,7 @@ let floorPlanBounds = null;
 let originalFloorPlanLines = [];
 let floorPlanLines = [];
 let currentRotateAngle = 0;
+let currentRotateViewPortAngle = 0;
 let rows = [];
 let boardLength = null;
 let boardWidth = null;

@@ -65,5 +65,6 @@
   "bottomLeftY": "Нижний левый Y:",
   "topRightX": "Верхний правый X:",
   "topRightY": "Верхний правый Y:",
-  "modalAddRectangleButton": "Добавить прямоугольник"
+  "modalAddRectangleButton": "Добавить прямоугольник",
+  "rotateViewPortBy45Label": "Повернуть на 45°"
 }

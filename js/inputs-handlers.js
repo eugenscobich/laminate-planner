@@ -174,3 +174,7 @@ addARectangleButton.addEventListener('click', function () {
 exportButton.addEventListener('click', function () {
   exportPdf();
 });
+
+rotateViewPortBy45.addEventListener('click', function () {
+  rotateViewportBy(45);
+});

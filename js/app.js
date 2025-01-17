@@ -590,3 +590,8 @@ function update() {
   updateStatistics();
   drawCanvas();
 }
+
+function rotateViewportBy(angle) {
+  currentRotateViewPortAngle += angle;
+  drawCanvas();
+}
