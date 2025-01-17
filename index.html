@@ -36,14 +36,13 @@
             <div class="accordion-item">
               <h2 class="accordion-header">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true"
-                        aria-controls="collapseOne">
-                  Floor schema
+                        aria-controls="collapseOne" data-i18n="floor-plan">
                 </button>
               </h2>
               <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
                 <div class="accordion-body">
                   <div class="row pb-2">
-                    <label for="fileInput" class="col-3 col-form-label">Dxf file:</label>
+                    <label for="fileInput" class="col-3 col-form-label" data-i18n="dxf-file"></label>
                     <div class="col-9">
                       <input class="form-control" accept=".dxf" id="fileInput" type="file">
                     </div>
@@ -51,8 +50,8 @@
 
                   <div class="row">
                     <div class="btn-group" role="group">
-                      <button type="button" class="btn btn-primary" id="rotateBy45">Rotate by 45&deg;</button>
-                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addALineModal">Add a line</button>
+                      <button type="button" class="btn btn-primary" id="rotateBy45" data-i18n="rotate-by-45"></button>
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addALineModal" data-i18n="add-line"></button>
                       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addARectangleModal">Add a rectangle</button>
                     </div>
                   </div>
