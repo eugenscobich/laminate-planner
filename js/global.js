@@ -10,6 +10,9 @@ const totalCostValue = document.getElementById('totalCostValue');
 const showNumbersCheckbox = document.getElementById('showNumbersCheckbox');
 const customArrangeBoardOffsetInput = document.getElementById('customArrangeBoardOffsetInput');
 const customArrangeBoardOffsetRangeInput = document.getElementById('customArrangeBoardOffsetRangeInput');
+const middleZInput = document.getElementById('middleZInput');
+const middleZRangeInput = document.getElementById('middleZRangeInput');
+
 const lengthInput = document.getElementById('lengthInput');
 const widthInput = document.getElementById('widthInput');
 const boardWidthOffsetInput = document.getElementById('boardWidthOffsetInput');
@@ -61,6 +64,16 @@ let boardLengthOffset = 0;
 let minBoardLength = null;
 let boardCost = 100;
 let showNumbers = true;
+
+let mouseScreenX = 0;
+let mouseScreenY = 0;
+let mouseFloorX = 0;
+let mouseFloorY = 0;
+
+let points3D = [];
+let minZ = 0;
+let maxZ = 0;
+let middleZ = 0;
 
 function reset() {
   rows = [];

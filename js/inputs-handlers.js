@@ -178,3 +178,40 @@ exportButton.addEventListener('click', function () {
 rotateViewPortBy45.addEventListener('click', function () {
   rotateViewportBy(45);
 });
+
+
+
+
+middleZInput.addEventListener('change', function () {
+  middleZRangeInput.value = middleZInput.value;
+  middleZ = parseInt(middleZInput.value);
+  update();
+});
+middleZRangeInput.addEventListener('input', function () {
+  middleZInput.value = middleZRangeInput.value;
+  middleZ = parseInt(middleZInput.value);
+  update();
+});
+middleZRangeInput.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  const step = 1;
+  let currentValue = parseInt(middleZRangeInput.value) || 0;
+  const minValue = parseInt(middleZRangeInput.min) || -Infinity;
+  const maxValue = parseInt(middleZRangeInput.max) || Infinity;
+
+  if (e.deltaY < 0) {
+    currentValue += step;
+    if (currentValue > maxValue) {
+      currentValue = maxValue;
+    }
+  } else {
+    currentValue -= step;
+    if (currentValue < minValue) {
+      currentValue = minValue;
+    }
+  }
+  middleZInput.value = currentValue;
+  middleZRangeInput.value = currentValue;
+  middleZ = parseInt(middleZInput.value);
+  update();
+});

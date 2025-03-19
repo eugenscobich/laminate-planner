@@ -14,7 +14,9 @@
   <!-- Include the DXF parser library via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!--<script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6/+esm"></script>-->
 
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 </head>
 <body>
 <div class="container-fluid">
@@ -171,6 +173,18 @@
                         <span class="input-group-text" data-i18n="mmUnit"></span>
                       </div>
                       <input id="customArrangeBoardOffsetRangeInput" class="form-range" max="1380" min="-1380" type="range" value="0">
+                    </div>
+                  </div>
+
+
+                  <div class="row">
+                    <label for="middleZInput" class="col-5 col-form-label" data-i18n="middleZInputLabel"></label>
+                    <div class="col-7">
+                      <div class="input-group">
+                        <input id="middleZInput" class="form-control" max="100" min="-100" type="number" value="0">
+                        <span class="input-group-text" data-i18n="mmUnit"></span>
+                      </div>
+                      <input id="middleZRangeInput" class="form-range" max="100" min="-100" type="range" value="0">
                     </div>
                   </div>
                 </div>

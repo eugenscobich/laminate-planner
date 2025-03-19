@@ -67,5 +67,6 @@
   "topRightX": "Top right corner X:",
   "topRightY": "Top right corner Y:",
   "modalAddRectangleButton": "Add rectangle",
-  "rotateViewPortBy45Label": "Rotate by 45°"
+  "rotateViewPortBy45Label": "Rotate by 45°",
+  "middleZInputLabel": "Middle Z"
 }

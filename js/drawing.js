@@ -25,20 +25,165 @@ window.addEventListener('resize', () => {
 // Draw Canvas
 function drawCanvas() {
   ctx.clearRect(0, 0, floorCanvas.width, floorCanvas.height);
+
   ctx.save();
-  // Apply pan and zoom transformations
   ctx.translate(panOffset.x, panOffset.y);
   ctx.scale(scale, -scale); // Flip Y-axis to match coordinate system
   ctx.translate(0, -floorCanvas.height / scale);
-
-  const angleRad = currentRotateViewPortAngle  * Math.PI / 180;
+  const angleRad = currentRotateViewPortAngle * Math.PI / 180;
   ctx.rotate(angleRad);
-
   drawFloorPlanLines();
   drawParquetBoards();
-
   ctx.restore();
+
   drawArrows();
+  drawMouseCoordinates();
+  drawSurfaceVisualizer();
+
+}
+
+function drawSurfaceVisualizer() {
+  if (points3D.length < 3) {
+    drawPoints();
+    return;
+  } // Need at least 3 points to form a triangle
+
+  // Create an array of [x, y] pairs for triangulation.
+  const xyCoords = points3D.map(pt => [pt.x, pt.y]);
+
+  // Compute the Delaunay triangulation using d3-delaunay.
+  // (If you're using the ESM version from the CDN, it will be available via window.d3.Delaunay)
+  const delaunay = d3.Delaunay.from(xyCoords);
+  const triangles = delaunay.triangles; // flat array of indices (each group of 3 forms a triangle)
+
+  // Compute min and max Z values to map Z to color.
+  const zValues = points3D.map(pt => pt.z);
+  const minZ = Math.min(...zValues);
+  const maxZ = Math.max(...zValues);
+
+  // A helper function to convert a Z value into a color.
+  // For example, low values (minZ) -> blue, high values (maxZ) -> red.
+  function zToColor(z) {
+    const t = (z - minZ) / (maxZ - minZ); // Normalize between 0 and 1.
+    const r = Math.round(255 * t);
+    const g = 0;
+    const b = Math.round(255 * (1 - t));
+    return `rgb(${r}, ${g}, ${b}, 0.5)`;
+  }
+
+  function zToColor2(z) {
+    let t = 0;
+    if (z < middleZ) {
+      t = ((z - minZ) / (middleZ - minZ)) * 0.5; // Normalize between 0 and 1.
+    } else if (middleZ === maxZ) {
+      t = 1;
+    } else {
+      t = ((z - middleZ) / (maxZ - middleZ)) * 0.5 + 0.5; // Normalize between 0 and 1.
+    }
+
+    let r, g, b;
+    if (t < 0.5) {
+      // Interpolate from blue (0, 0, 255) to green (0, 255, 0)
+      const t2 = t / 0.5; // Normalize to 0..1
+      r = 0;
+      g = Math.round(255 * t2);
+      b = Math.round(255 * (1 - t2));
+    } else {
+      // Interpolate from green (0, 255, 0) to red (255, 0, 0)
+      const t2 = (t - 0.5) / 0.5; // Normalize to 0..1
+      r = Math.round(255 * t2);
+      g = Math.round(255 * (1 - t2));
+      b = 0;
+    }
+    return `rgb(${r}, ${g}, ${b}, 0.5)`;
+  }
+
+  // Save the current transform
+
+  // Draw each triangle:
+  for (let i = 0; i < triangles.length; i += 3) {
+    const i0 = triangles[i];
+    const i1 = triangles[i + 1];
+    const i2 = triangles[i + 2];
+
+    const p0 = points3D[i0];
+    const p1 = points3D[i1];
+    const p2 = points3D[i2];
+
+    // Compute the average Z value of the triangle.
+    const avgZ = (p0.z + p1.z + p2.z) / 3;
+    const fillColor = zToColor2(avgZ);
+
+    drawPoint(p0.x, p0.y, p0.z, zToColor2(p0.z));
+    drawPoint(p1.x, p1.y, p1.z, zToColor2(p1.z));
+    drawPoint(p2.x, p2.y, p2.z, zToColor2(p2.z));
+
+    ctx.save();
+    // Apply existing pan, zoom, and flip transforms (if any)
+    ctx.translate(panOffset.x, panOffset.y);
+    ctx.scale(scale, -scale);
+    ctx.translate(0, -floorCanvas.height / scale);
+
+    ctx.beginPath();
+
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.closePath();
+
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+
+    // Optionally, draw triangle edges:
+    ctx.strokeStyle = fillColor;
+    ctx.lineWidth = 0.5 / scale;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+}
+
+function drawPoints() {
+  // Draw the 3D points over the canvas.
+  // We want the text to be drawn in screen coordinates so we can avoid any scale or Y-flip.
+  points3D.forEach(pt => {
+    drawPoint(pt.x, pt.y, pt.z, 'green');
+  });
+}
+
+function drawPoint(x, y, z, style) {
+  // Convert floor plan point to screen coordinates:
+  const screenX = x * scale + panOffset.x;
+  const screenY = floorCanvas.height - y * scale + panOffset.y;
+
+  // Draw a small circle to mark the point.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, 2, 0, 2 * Math.PI);
+  ctx.fillStyle = style;
+  ctx.fill();
+  ctx.strokeStyle = style;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  // Draw the Z coordinate next to the point
+  ctx.save();
+  ctx.font = "14px Arial";
+  ctx.fillStyle = style;
+  // Offset the text a bit from the point (e.g., 8 pixels right and 5 pixels down)
+  ctx.fillText("Z: " + z, screenX + 8, screenY + 5);
+  ctx.restore();
+}
+
+function drawMouseCoordinates() {
+  ctx.save();
+  ctx.fillStyle = 'red';
+  ctx.font = '14px Arial';
+  const label = `X: ${mouseFloorX.toFixed(0)}, Y: ${mouseFloorY.toFixed(0)}`;
+  const offset = 10;
+  ctx.fillText(label, mouseScreenX + offset, (mouseScreenY + offset));
+  ctx.restore();
 }
 
 // Zooming
@@ -70,11 +215,20 @@ floorCanvas.addEventListener('mousedown', function (e) {
 });
 
 floorCanvas.addEventListener('mousemove', function (e) {
+  mouseScreenX = e.offsetX;
+  mouseScreenY = e.offsetY;
+
   if (isPanning) {
     panOffset.x = e.clientX - panStart.x;
     panOffset.y = e.clientY - panStart.y;
-    drawCanvas();
   }
+
+  let x = mouseScreenX - panOffset.x;
+  let y = mouseScreenY - panOffset.y;
+  mouseFloorX = x / scale;
+  mouseFloorY = (floorCanvas.height - y) / scale;
+
+  drawCanvas();
 });
 
 floorCanvas.addEventListener('mouseup', function (e) {
@@ -83,6 +237,40 @@ floorCanvas.addEventListener('mouseup', function (e) {
 
 floorCanvas.addEventListener('mouseleave', function (e) {
   isPanning = false;
+});
+
+floorCanvas.addEventListener('click', function (e) {
+  // Skip if panning or if a movement was detected
+  if (isPanning) {
+    return;
+  }
+
+  let x = e.offsetX - panOffset.x;
+  let y = e.offsetY - panOffset.y;
+  mouseFloorX = x / scale;
+  mouseFloorY = (floorCanvas.height - y) / scale;
+  const zInput = prompt("Enter Z coordinate:");
+  if (zInput === null) {
+    return;
+  } // User cancelled
+  const z = parseInt(zInput);
+  if (isNaN(z)) {
+    alert("Invalid Z coordinate.");
+    return;
+  }
+
+  // Save the new 3D point
+  points3D.push({x: mouseFloorX, y: mouseFloorY, z});
+  const zValues = points3D.map(pt => pt.z);
+  const average = array => array.reduce((a, b) => a + b) / array.length;
+  minZ = Math.min(...zValues);
+  maxZ = Math.max(...zValues);
+  middleZ = average(zValues);
+  middleZInput.value = middleZ;
+  middleZRangeInput.value = middleZ;
+  middleZRangeInput.max = maxZ;
+  middleZRangeInput.min = minZ;
+  drawCanvas();
 });
 
 // Function to render floor plan lines
