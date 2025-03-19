@@ -4,6 +4,7 @@ const ctx = floorCanvas.getContext('2d');
 let scale = 1;
 let panOffset = {x: 0, y: 0};
 let isPanning = false;
+let wasMoving = false;
 let panStart = {x: 0, y: 0};
 
 function resizeCanvas() {
@@ -33,6 +34,7 @@ function drawCanvas() {
   const angleRad = currentRotateViewPortAngle * Math.PI / 180;
   ctx.rotate(angleRad);
   drawFloorPlanLines();
+  drawFloorPlanPoints();
   drawParquetBoards();
   ctx.restore();
 
@@ -95,7 +97,7 @@ function drawSurfaceVisualizer() {
       g = Math.round(255 * (1 - t2));
       b = 0;
     }
-    return `rgb(${r}, ${g}, ${b}, 0.5)`;
+    return `rgb(${r}, ${g}, ${b}, 0.8)`;
   }
 
   // Save the current transform
@@ -217,7 +219,7 @@ floorCanvas.addEventListener('mousedown', function (e) {
 floorCanvas.addEventListener('mousemove', function (e) {
   mouseScreenX = e.offsetX;
   mouseScreenY = e.offsetY;
-
+  wasMoving = true;
   if (isPanning) {
     panOffset.x = e.clientX - panStart.x;
     panOffset.y = e.clientY - panStart.y;
@@ -241,14 +243,15 @@ floorCanvas.addEventListener('mouseleave', function (e) {
 
 floorCanvas.addEventListener('click', function (e) {
   // Skip if panning or if a movement was detected
-  if (isPanning) {
+  if (isPanning || wasMoving) {
+    wasMoving = false;
     return;
   }
 
   let x = e.offsetX - panOffset.x;
   let y = e.offsetY - panOffset.y;
-  mouseFloorX = x / scale;
-  mouseFloorY = (floorCanvas.height - y) / scale;
+  mouseFloorX = Math.round(x / scale);
+  mouseFloorY = Math.round((floorCanvas.height - y) / scale);
   const zInput = prompt("Enter Z coordinate:");
   if (zInput === null) {
     return;
@@ -260,7 +263,19 @@ floorCanvas.addEventListener('click', function (e) {
   }
 
   // Save the new 3D point
-  points3D.push({x: mouseFloorX, y: mouseFloorY, z});
+
+  let found = false
+  points3D.forEach((point) => {
+    if (point.x === mouseFloorX && point.y === mouseFloorY) {
+      found = true;
+      point.z = z;
+    }
+  })
+
+  if (found === false) {
+    points3D.push({x: mouseFloorX, y: mouseFloorY, z});
+  }
+
   const zValues = points3D.map(pt => pt.z);
   const average = array => array.reduce((a, b) => a + b) / array.length;
   minZ = Math.min(...zValues);
@@ -270,6 +285,7 @@ floorCanvas.addEventListener('click', function (e) {
   middleZRangeInput.value = middleZ;
   middleZRangeInput.max = maxZ;
   middleZRangeInput.min = minZ;
+  console.log(`${mouseFloorX},${mouseFloorY},${z}`);
   drawCanvas();
 });
 
@@ -282,6 +298,20 @@ function drawFloorPlanLines() {
       ctx.beginPath();
       ctx.moveTo(line.x1, line.y1);
       ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+    });
+  }
+}
+
+function drawFloorPlanPoints() {
+  if (originalFloorPoints.length > 0) {
+    ctx.lineWidth = 1 / scale; // Adjust line width based on scale
+    originalFloorPoints.forEach(point => {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 0.1, 0, 2 * Math.PI);
+      ctx.fillStyle = 'black';
+      ctx.fill();
+      ctx.strokeStyle = 'black';
       ctx.stroke();
     });
   }

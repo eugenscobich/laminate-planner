@@ -53,6 +53,7 @@ const addARectangleModal = new bootstrap.Modal('#addARectangleModal', {
 
 let floorPlanBounds = null;
 let originalFloorPlanLines = [];
+let originalFloorPoints = [];
 let floorPlanLines = [];
 let currentRotateAngle = 0;
 let currentRotateViewPortAngle = 0;

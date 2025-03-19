@@ -38,6 +38,7 @@ function loadDXFFile(file) {
 
       // Extract line segments from DXF entities
       originalFloorPlanLines = extractLinesFromDXF(dxfData.entities);
+      originalFloorPoints = extractPointsFromDXF(dxfData.entities);
       floorPlanLines = originalFloorPlanLines.map(line => ({...line}));
       floorPlanBounds = getFloorPlanBounds();
       isFloorPlanLoaded = true;
@@ -90,6 +91,25 @@ function extractLinesFromDXF(entities) {
   });
 
   return lines;
+}
+
+// Function to extract line segments from DXF entities
+function extractPointsFromDXF(entities) {
+  let points = [];
+
+  entities.forEach(entity => {
+    switch (entity.type) {
+      case 'CIRCLE':
+        points.push({
+          x: Math.round(entity.center.x),
+          y: Math.round(entity.center.y)
+        });
+        break;
+        // Add cases for other DXF entities if needed
+    }
+  });
+
+  return points;
 }
 
 // Function to get extents from DXF data

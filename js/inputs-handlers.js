@@ -185,12 +185,12 @@ rotateViewPortBy45.addEventListener('click', function () {
 middleZInput.addEventListener('change', function () {
   middleZRangeInput.value = middleZInput.value;
   middleZ = parseInt(middleZInput.value);
-  update();
+  drawCanvas();
 });
 middleZRangeInput.addEventListener('input', function () {
   middleZInput.value = middleZRangeInput.value;
   middleZ = parseInt(middleZInput.value);
-  update();
+  drawCanvas();
 });
 middleZRangeInput.addEventListener('wheel', function (e) {
   e.preventDefault();
@@ -213,5 +213,5 @@ middleZRangeInput.addEventListener('wheel', function (e) {
   middleZInput.value = currentValue;
   middleZRangeInput.value = currentValue;
   middleZ = parseInt(middleZInput.value);
-  update();
+  drawCanvas();
 });
