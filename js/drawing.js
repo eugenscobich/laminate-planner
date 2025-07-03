@@ -256,7 +256,7 @@ floorCanvas.addEventListener('click', function (e) {
   if (zInput === null) {
     return;
   } // User cancelled
-  const z = parseInt(zInput);
+  const z = parseFloat(zInput);
   if (isNaN(z)) {
     alert("Invalid Z coordinate.");
     return;
@@ -416,7 +416,7 @@ function drawRemainings(row) {
     let offsetLeft = floorPlanBounds.minX - space;
     row.remainings.forEach(remaining => {
       if (remaining.reused === false) {
-        if (remaining.cut === 'left') {
+        if (remaining.cut.includes('left') && !remaining.cut.includes('right')) {
           const x = offsetRight;
           const y = row.segments[0].y;
           const width = row.segments[0].width;
@@ -441,7 +441,7 @@ function drawRemainings(row) {
             ctx.restore();
           }
 
-        } else if (remaining.cut === 'right') {
+        } else if (remaining.cut.includes('right') && !remaining.cut.includes('left')) {
           offsetLeft -= remaining.length;
           const x = offsetLeft;
           const y = row.segments[0].y;
@@ -467,7 +467,7 @@ function drawRemainings(row) {
             ctx.restore();
           }
         }
-      } else if (remaining.cut === 'both') {
+      } else if (remaining.cut.includes('left') && remaining.cut.includes('right')) {
         offsetLeft -= remaining.length;
         const x = offsetLeft;
         const y = row.segments[0].y;

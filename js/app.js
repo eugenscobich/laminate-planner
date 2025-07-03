@@ -293,7 +293,7 @@ function calculateTotalRemainingSquareValue() {
     const row = rows[i];
     for (let j = 0; j < row.remainings.length; j++) {
       const remaining = row.remainings[j];
-      if (!remaining.reused || remaining.cut === 'both') {
+      if (!remaining.reused || (remaining.cut.includes('left') && remaining.cut.includes('right'))) {
         totalSquare += remaining.length * row.segments[0].width;
       }
     }
@@ -307,7 +307,7 @@ function findMinimalCutBoard(cut) {
     const row = rows[i];
     for (let j = 0; j < row.remainings.length; j++) {
       const remaining = row.remainings[j];
-      if (remaining.cut === cut && !remaining.reused) {
+      if (remaining.cut.includes(cut) && !remaining.reused) {
         if (minimalCutBoard == null || remaining.length < minimalCutBoard.length) {
           if (!doNotUseSmallRemainingsCheckbox.checked || remaining.length > minBoardLength) {
             minimalCutBoard = remaining
@@ -325,7 +325,7 @@ function findBoardToReuse(cut, length) {
     const row = rows[i];
     for (let j = 0; j < row.remainings.length; j++) {
       const remaining = row.remainings[j];
-      if (remaining.cut === cut && !remaining.reused) {
+      if (remaining.cut.includes(cut) && !remaining.reused) {
         remainings.push(remaining);
       }
     }
@@ -377,16 +377,17 @@ function findFirstBoard(previousRow, availableSegment) {
 }
 
 function computeNewBoard() {
-  //console.log("Find last not completed row and segment")
+  console.log("Find last not completed row and segment")
   if (rows.length === 0) {
     alert('Please add at least one row.');
     throw new Error('Please add at least one row.');
   }
 
-  const availableSegment = findAvailableSegment();
-  // Calculate Bord Length that need to be added
-  let currentBordLength = boardLength;
-  let currentBordNumber = findMaxBoardNumber() + 1;
+  const availableSegment   = findAvailableSegment();
+  let currentBoardNumber = findMaxBoardNumber() + 1;
+  let currentBoardLength = boardLength;
+  let currentBordWidth = boardWidth;
+
   if (availableSegment == null) {
     //console.log("There is no available Segments to add board");
     return false;
@@ -396,14 +397,35 @@ function computeNewBoard() {
       //console.log("Found first segment which is empty. Add first board ever");
       if (boardLengthOffset < 0) {
         // need to cut first board
-        currentBordLength = boardLength + boardLengthOffset;
-        if (doNotUseSmallRemainingsCheckbox.checked && currentBordLength < minBoardLength) {
-          currentBordLength = minBoardLength;
+        currentBoardLength = boardLength + boardLengthOffset;
+        if (doNotUseSmallRemainingsCheckbox.checked && currentBoardLength < minBoardLength) {
+          currentBoardLength = minBoardLength;
         }
         rows[0].remainings.push({
-          length: boardLength - currentBordLength, number: 1, cut: 'right', reused: false
+          length: boardLength - currentBoardLength,
+          width: boardWidth,
+          number: 1,
+          cut: ['right'],
+          reused: false
         });
       }
+
+      if (boardWidthOffset < 0) {
+        // need to cut first board
+        currentBordWidth = boardWidth + boardWidthOffset;
+        let cut = ['top'];
+        if (boardLengthOffset < 0) {
+          cut.push('left');
+        }
+        rows[0].remainings.push({
+          width: boardWidth - currentBordWidth,
+          length: currentBoardLength,
+          number: 1,
+          cut: cut,
+          reused: false
+        });
+      }
+
     } else {
       if (availableSegment.boards.length === 0) {
         //console.log("Found available segment does not have boards, let see how to add first one");
@@ -411,8 +433,8 @@ function computeNewBoard() {
         if (arrangeModeSelect.value === 'continue') {
           let boardCutByRight = findMinimalCutBoard('left');
           if (boardCutByRight != null) {
-            currentBordLength = boardCutByRight.length;
-            currentBordNumber = boardCutByRight.number;
+            currentBoardLength = boardCutByRight.length;
+            currentBoardNumber = boardCutByRight.number;
             boardCutByRight.reused = true;
           }
         } else {
@@ -426,11 +448,22 @@ function computeNewBoard() {
           }
 
           if (availableSegment.row.number === 1) {
-            let boardCutByRight = findMinimalCutBoard('left');
+            if (availableSegment.number > 1) {
+              let previousSegment = availableSegment.row.segments[availableSegment.number - 2];
+              let expectedEndX = previousSegment.boards[previousSegment.boards.length - 1].x + boardLength;
+              currentBoardLength = expectedEndX - availableSegment.x;
+            }
+
+            let boardCutByRight = findBoardToReuse('left', currentBoardLength);
             if (boardCutByRight != null) {
-              currentBordLength = boardCutByRight.length;
-              currentBordNumber = boardCutByRight.number;
+              currentBoardNumber = boardCutByRight.number;
               boardCutByRight.reused = true;
+              availableSegment.row.remainings.push({
+                length: boardCutByRight.length - currentBoardLength,
+                number: boardCutByRight.number,
+                cut: ['left', 'right'],
+                reused: true
+              });
             }
           } else {
             let firstBoard = null;
@@ -446,31 +479,31 @@ function computeNewBoard() {
 
             firstBoardEndX += delta;
 
-            let currentBoardEndX = availableSegment.x + currentBordLength;
+            let currentBoardEndX = availableSegment.x + currentBoardLength;
             firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
-            currentBordLength = firstBoardEndX - availableSegment.x;
+            currentBoardLength = firstBoardEndX - availableSegment.x;
 
-            currentBordLength = Math.round(firstBoardEndX - availableSegment.x);
-            if (currentBordLength <= 0) {
-              currentBordLength = currentBordLength + boardLength;
+            currentBoardLength = Math.round(firstBoardEndX - availableSegment.x);
+            if (currentBoardLength <= 0) {
+              currentBoardLength = currentBoardLength + boardLength;
             }
 
-            let boardToReuse = findBoardToReuse('left', currentBordLength);
+            let boardToReuse = findBoardToReuse('left', currentBoardLength);
             if (boardToReuse != null) {
-              currentBordNumber = boardToReuse.number;
+              currentBoardNumber = boardToReuse.number;
               boardToReuse.reused = true;
 
-              if (boardToReuse.length > currentBordLength) {
+              if (boardToReuse.length > currentBoardLength) {
                 // need to cut reused board
                 availableSegment.row.remainings.push({
-                  length: boardToReuse.length - currentBordLength, number: boardToReuse.number, cut: 'both', reused: true
+                  length: boardToReuse.length - currentBoardLength, number: boardToReuse.number, cut: ['left', 'right'], reused: true
                 });
               }
             } else {
-              if (boardLength > currentBordLength) {
+              if (boardLength > currentBoardLength) {
                 // need to cut new board
                 availableSegment.row.remainings.push({
-                  length: boardLength - currentBordLength, number: currentBordNumber, cut: 'right', reused: false
+                  length: boardLength - currentBoardLength, number: currentBoardNumber, cut: ['right'], reused: false
                 });
               }
             }
@@ -480,38 +513,62 @@ function computeNewBoard() {
     }
   }
 
-  if (availableSegment.remainingLength >= currentBordLength) {
+  if (availableSegment.remainingLength >= currentBoardLength) {
     availableSegment.boards.push({
       x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
       y: availableSegment.y,
       width: availableSegment.width,
-      length: currentBordLength,
-      number: currentBordNumber,
+      length: currentBoardLength,
+      number: currentBoardNumber,
       remainingLength: 0,
       segment: availableSegment
     });
-    availableSegment.remainingLength -= currentBordLength;
+    availableSegment.remainingLength -= currentBoardLength;
   } else {
-    // need to cut
-    const cutLength = currentBordLength - availableSegment.remainingLength;
-    availableSegment.boards.push({
-      x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
-      y: availableSegment.y,
-      width: availableSegment.width,
-      length: availableSegment.remainingLength,
-      number: currentBordNumber,
-      remainingLength: 0,
-      segment: availableSegment
-    });
-    availableSegment.remainingLength = 0;
 
-    availableSegment.row.remainings.push({
-      length: cutLength, number: currentBordNumber, cut: 'left', reused: false
-    });
+    let boardToReuse = findBoardToReuse('right', availableSegment.remainingLength);
+    if (boardToReuse == null) {
+      // need to cut entier board
+      const cutLength = currentBoardLength - availableSegment.remainingLength;
+      availableSegment.boards.push({
+        x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+        y: availableSegment.y,
+        width: availableSegment.width,
+        length: availableSegment.remainingLength,
+        number: currentBoardNumber,
+        remainingLength: 0,
+        segment: availableSegment
+      });
+      availableSegment.remainingLength = 0;
 
+      availableSegment.row.remainings.push({
+        length: cutLength, number: currentBoardNumber, cut: ['left'], reused: false
+      });
+    } else {
+      // need to cut reused board
+      boardToReuse.reused = true;
+
+      const cutLength = boardToReuse.length - availableSegment.remainingLength;
+      availableSegment.boards.push({
+        x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+        y: availableSegment.y,
+        width: availableSegment.width,
+        length: availableSegment.remainingLength,
+        number: boardToReuse.number,
+        remainingLength: 0,
+        segment: availableSegment
+      });
+      availableSegment.remainingLength = 0;
+
+      availableSegment.row.remainings.push({
+        length: cutLength, number: boardToReuse.number, cut: ['right', 'left'], reused: true
+      });
+    }
   }
   return true;
 }
+
+
 
 function updateStatistics() {
   let maxNumberOfBoards = findMaxBoardNumber();
