@@ -460,8 +460,8 @@ function computeNewBoard() {
             length: boardLength - currentBoardLength - cutWidth,
             width: boardWidth,
             number: 1,
-            cut: ['right'],
-            reused: false
+            cut: ['right', 'left'],
+            reused: true
           });
         }
       }
