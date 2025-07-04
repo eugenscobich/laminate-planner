@@ -459,7 +459,7 @@ function computeNewBoard() {
           rows[0].remainings.push({
             length: boardLength - currentBoardLength - cutWidth,
             width: boardWidth,
-            number: 0,
+            number: 1,
             cut: ['right'],
             reused: false
           });
