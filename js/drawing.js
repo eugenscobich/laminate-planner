@@ -41,7 +41,7 @@ function drawCanvas() {
   drawArrows();
   drawMouseCoordinates();
   drawSurfaceVisualizer();
-
+  drawBoardStatisticsUnderMouse(); // <-- Draw board stats if mouse is over a board
 }
 
 function drawSurfaceVisualizer() {
@@ -516,4 +516,71 @@ function drawRemainings(row) {
       }
     });
   }
+}
+
+/**
+ * Returns the board object under the current mouse position, or null if none.
+ */
+function getBoardUnderMouse() {
+  // Convert mouse screen coordinates to floor coordinates
+  let x = mouseScreenX - panOffset.x;
+  let y = mouseScreenY - panOffset.y;
+  let floorX = x / scale;
+  let floorY = (floorCanvas.height - y) / scale;
+
+  // Check all boards
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.segments.length; j++) {
+      const segment = row.segments[j];
+      for (let k = 0; k < segment.boards.length; k++) {
+        const board = segment.boards[k];
+        // Board rectangle: (board.x, board.y) is top-left, width: board.length, height: board.width
+        // Y is decreasing downwards (because of canvas flip)
+        if (
+          floorX >= board.x &&
+          floorX <= board.x + board.length &&
+          floorY <= board.y &&
+          floorY >= board.y - board.width
+        ) {
+          return board;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Draws statistics for the board under the mouse, if any.
+ */
+function drawBoardStatisticsUnderMouse() {
+  const board = getBoardUnderMouse();
+  if (!board) return;
+
+  // Prepare stats text
+  const stats = [
+    `Number: ${board.number}`,
+    `Length: ${board.length}`,
+    `Width: ${board.width}`
+  ];
+
+  // Draw stats near mouse
+  ctx.save();
+  ctx.font = '14px Arial';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  // Background box
+  const padding = 6;
+  const lineHeight = 18;
+  const boxWidth = 120;
+  const boxHeight = stats.length * lineHeight + padding * 2;
+  ctx.fillRect(mouseScreenX + 15, mouseScreenY + 15, boxWidth, boxHeight);
+
+  ctx.fillStyle = 'black';
+  for (let i = 0; i < stats.length; i++) {
+    ctx.fillText(stats[i], mouseScreenX + 20, mouseScreenY + 20 + i * lineHeight);
+  }
+  ctx.restore();
 }
