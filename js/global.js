@@ -4,6 +4,7 @@ const fileInput = document.getElementById('fileInput');
 const loadFileButton = document.getElementById('loadFileButton');
 const addRowButton = document.getElementById('addRowButton');
 const addBoardButton = document.getElementById('addBoardButton');
+const completeGapButton = document.getElementById('completeGapButton');
 const fullCompleteButton = document.getElementById('fullCompleteButton');
 const boardCostInput = document.getElementById('boardCostInput');
 const totalCostValue = document.getElementById('totalCostValue');
@@ -20,6 +21,7 @@ const boardWidthOffsetRangeInput = document.getElementById('boardWidthOffsetRang
 const boardLengthOffsetInput = document.getElementById('boardLengthOffsetInput');
 const boardLengthOffsetRangeInput = document.getElementById('boardLengthOffsetRangeInput');
 const minBoardLengthInput = document.getElementById('minBoardLengthInput');
+const cutWidthInput = document.getElementById('cutWidthInput');
 const doNotUseSmallRemainingsCheckbox = document.getElementById('doNotUseSmallRemainingsCheckbox');
 const totalNumberOfBoardsValue = document.getElementById('totalNumberOfBoardsValue');
 const totalFloorSquareValue = document.getElementById('totalFloorSquareValue');
@@ -50,7 +52,7 @@ const addARectangleEndYInput = document.getElementById('addARectangleEndY');
 const addARectangleModal = new bootstrap.Modal('#addARectangleModal', {
   keyboard: false
 })
-
+let cutWidth= null; // Width of the cut in mm
 let floorPlanBounds = null;
 let originalFloorPlanLines = [];
 let originalFloorPoints = [];
@@ -83,6 +85,7 @@ function reset() {
   boardWidthOffset = parseInt(boardWidthOffsetInput.value);
   boardLengthOffset = parseInt(boardLengthOffsetInput.value);
   minBoardLength = parseInt(minBoardLengthInput.value);
+  cutWidth = parseInt(cutWidthInput.value);
   boardCost = parseInt(boardCostInput.value);
   showNumbers = showNumbersCheckbox.checked;
 }

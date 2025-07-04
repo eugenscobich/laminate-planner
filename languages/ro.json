@@ -22,6 +22,7 @@
   "boardInitialCutLabel": "Tăietură inițială:",
   "smallRemainsLabel": "Nu folosi resturile mici:",
   "minBoardLengthLabel": "Rest minim de placă:",
+  "cutWidthLabel": "Lațimea taierii:",
   "arrangeModeLabel": "Mod de aranjare:",
   "arrangeModeContinue": "Continuă",
   "arrangeModeHalfShift": "Deplasare 1/2",
@@ -36,6 +37,7 @@
   "fullCompleteButton": "Completează Tot",
   "addRowButton": "Adaugă Rând",
   "addBoardButton": "Adaugă Placă",
+  "completeGapButton": "Completează Golul",
   "exportButton": "Exportă",
 
   "statisticsAccordion": "Statistici",

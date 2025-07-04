@@ -378,6 +378,13 @@ function drawParquetBoards() {
             drawBoard(board);
           });
         }
+        if (segment.gaps.length > 0) {
+          segment.gaps.forEach(gap => {
+            if (gap.completed === false) {
+              drawGaps(gap);
+            }
+          });
+        }
       });
       drawRemainings(row);
     });
@@ -407,6 +414,20 @@ function drawBoard(board) {
     ctx.fillText(board.number.toString(), board.x + board.length / 2, -(board.y - board.width / 2));
     ctx.restore();
   }
+}
+
+function drawGaps(gap) {
+  ctx.beginPath();
+  ctx.rect(gap.x, gap.y, gap.length, -gap.width);
+  if (gap.length < minBoardLength) {
+    ctx.fillStyle = 'rgba(10,140,42,0.7)';
+  } else {
+    ctx.fillStyle = 'rgba(10, 42, 42, 0.7)';
+  }
+  ctx.fill();
+  ctx.lineWidth = 1 / scale; // Adjust line width based on scale
+  ctx.strokeStyle = 'black';
+  ctx.stroke();
 }
 
 function drawRemainings(row) {

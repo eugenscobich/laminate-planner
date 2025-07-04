@@ -17,11 +17,12 @@
   "boardWidthLabel": "Board Width:",
   "mmUnit": "mm",
 
-  "arrangementSettingsAccordion": "Arrangement Settings",
+  "arrangementSettingsAccordion": "Arrangement settings",
   "wallOffsetLabel": "Wall Offset:",
   "boardInitialCutLabel": "Board Initial Cut:",
-  "smallRemainsLabel": "Do not use small remainings:",
-  "minBoardLengthLabel": "Minimal Board remainings:",
+  "smallRemainsLabel": "Do Not Use Dmall Remainings:",
+  "minBoardLengthLabel": "Minimal Board Remainings:",
+  "cutWidthLabel": "Cut Width:",
   "arrangeModeLabel": "Arrange Mode:",
   "arrangeModeContinue": "Continue",
   "arrangeModeHalfShift": "1/2 Shift",
@@ -36,6 +37,7 @@
   "fullCompleteButton": "Full Complete",
   "addRowButton": "Add Row",
   "addBoardButton": "Add Board",
+  "completeGapButton": "Complete Gap",
   "exportButton": "Export",
 
   "statisticsAccordion": "Statistics",

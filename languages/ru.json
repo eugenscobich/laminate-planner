@@ -22,6 +22,7 @@
   "boardInitialCutLabel": "Начальный рез доски:",
   "smallRemainsLabel": "Не использовать маленькие остатки:",
   "minBoardLengthLabel": "Минимальный остаток доски:",
+  "cutWidthLabel": "Ширина Реза:",
   "arrangeModeLabel": "Режим укладки:",
   "arrangeModeContinue": "Продолжить",
   "arrangeModeHalfShift": "Смещение 1/2",
@@ -36,6 +37,7 @@
   "fullCompleteButton": "Заполнить всё",
   "addRowButton": "Добавить ряд",
   "addBoardButton": "Добавить доску",
+  "completeGapButton": "Заполнить пробел",
   "exportButton": "Экспорт",
 
   "statisticsAccordion": "Статистика",

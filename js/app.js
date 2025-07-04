@@ -62,6 +62,14 @@ function completeTheFloor() {
       break;
     }
   }
+
+  while (true) {
+    const completedGap = completeNewGap();
+    if (!completedGap) {
+      break;
+    }
+  }
+
 }
 
 function computeRow() {
@@ -74,6 +82,13 @@ function computeRow() {
 function computeBord() {
   validate();
   computeNewBoard();
+  updateStatistics();
+  drawCanvas();
+}
+
+function completeGap() {
+  validate();
+  completeNewGap();
   updateStatistics();
   drawCanvas();
 }
@@ -226,6 +241,7 @@ function computeNewRow() {
         length: segmentLength,
         width: rowTopHorizontalSegment.y1 - rowBottomHorizontalSegment.y1,
         boards: [],
+        gaps: [],
         row: row,
         number: j + 1,
         remainingLength: segmentLength
@@ -255,6 +271,47 @@ function findAvailableSegment() {
       }
     }
   }
+}
+
+function findNotCompletedGap() {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.segments.length; j++) {
+      const segment = row.segments[j];
+      for (let k = 0; k < segment.gaps.length; k++) {
+        const gap = segment.gaps[k];
+        if (gap.completed == false) {
+          return gap;
+        }
+      }
+    }
+  }
+}
+
+function findMaxGapToCompleteTheLength(type, length) {
+  let gaps = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.segments.length; j++) {
+      const segment = row.segments[j];
+      for (let k = 0; k < segment.gaps.length; k++) {
+        const gap = segment.gaps[k];
+        if (gap.type === type && !gap.completed) {
+          gaps.push(gap);
+        }
+      }
+    }
+  }
+  gaps.sort((a, b) => {
+    a.length - b.length
+  });
+  for (let i = 0; i < gaps.length; i++) {
+    const gap = gaps[i];
+    if (gap.length <= length) {
+      return gap;
+    }
+  }
+  return null;
 }
 
 function findMaxBoardNumber() {
@@ -383,51 +440,33 @@ function computeNewBoard() {
     throw new Error('Please add at least one row.');
   }
 
-  const availableSegment   = findAvailableSegment();
+  const availableSegment = findAvailableSegment();
   let currentBoardNumber = findMaxBoardNumber() + 1;
   let currentBoardLength = boardLength;
-  let currentBordWidth = boardWidth;
 
   if (availableSegment == null) {
     //console.log("There is no available Segments to add board");
     return false;
   } else {
-    if (availableSegment.number === 1 && availableSegment.row.number === 1 && availableSegment.boards.length === 0) {
+    if (availableSegment.number === 1 && availableSegment.row.number === 1 && availableSegment.boards.length === 0
+        && availableSegment.gaps.length === 0) {
       // This is first segment
       //console.log("Found first segment which is empty. Add first board ever");
       if (boardLengthOffset < 0) {
         // need to cut first board
         currentBoardLength = boardLength + boardLengthOffset;
-        if (doNotUseSmallRemainingsCheckbox.checked && currentBoardLength < minBoardLength) {
-          currentBoardLength = minBoardLength;
+        if (arrangeModeSelect.value === 'continue') {
+          rows[0].remainings.push({
+            length: boardLength - currentBoardLength - cutWidth,
+            width: boardWidth,
+            number: 0,
+            cut: ['right'],
+            reused: false
+          });
         }
-        rows[0].remainings.push({
-          length: boardLength - currentBoardLength,
-          width: boardWidth,
-          number: 1,
-          cut: ['right'],
-          reused: false
-        });
       }
-
-      if (boardWidthOffset < 0) {
-        // need to cut first board
-        currentBordWidth = boardWidth + boardWidthOffset;
-        let cut = ['top'];
-        if (boardLengthOffset < 0) {
-          cut.push('left');
-        }
-        rows[0].remainings.push({
-          width: boardWidth - currentBordWidth,
-          length: currentBoardLength,
-          number: 1,
-          cut: cut,
-          reused: false
-        });
-      }
-
     } else {
-      if (availableSegment.boards.length === 0) {
+      if (availableSegment.boards.length === 0 && availableSegment.gaps.length === 0) {
         //console.log("Found available segment does not have boards, let see how to add first one");
         // available segment does not have boards, lets see what can be added at beginning
         if (arrangeModeSelect.value === 'continue') {
@@ -438,7 +477,7 @@ function computeNewBoard() {
             boardCutByRight.reused = true;
           }
         } else {
-          let delta;
+          let delta = 0;
           if (arrangeModeSelect.value === 'halfShift') {
             delta = boardLength / 2;
           } else if (arrangeModeSelect.value === 'thirdShift') {
@@ -447,128 +486,187 @@ function computeNewBoard() {
             delta = parseInt(customArrangeBoardOffsetInput.value);//* (availableSegment.row.number - 1);
           }
 
-          if (availableSegment.row.number === 1) {
-            if (availableSegment.number > 1) {
-              let previousSegment = availableSegment.row.segments[availableSegment.number - 2];
-              let expectedEndX = previousSegment.boards[previousSegment.boards.length - 1].x + boardLength;
-              currentBoardLength = expectedEndX - availableSegment.x;
-            }
+          let firstBoardOrGapEndX = rows[0].segments[0].x + boardLengthOffset + boardLength;
+          let expectedCurrentSegmentEndX = firstBoardOrGapEndX + (availableSegment.row.number - 1) * delta;
 
-            let boardCutByRight = findBoardToReuse('left', currentBoardLength);
-            if (boardCutByRight != null) {
-              currentBoardNumber = boardCutByRight.number;
-              boardCutByRight.reused = true;
-              availableSegment.row.remainings.push({
-                length: boardCutByRight.length - currentBoardLength,
-                number: boardCutByRight.number,
-                cut: ['left', 'right'],
-                reused: true
-              });
-            }
-          } else {
-            let firstBoard = null;
-            const previousRow = rows[availableSegment.row.number - 2];
-            firstBoard = findFirstBoard(previousRow, availableSegment);
+          let firstBoardEndX = findNearBoardEndX(expectedCurrentSegmentEndX, availableSegment.x);
+          currentBoardLength = firstBoardEndX - availableSegment.x;
 
-            if (firstBoard == null) {
-              const previousSegment = previousRow.segments[previousRow.segments.length - 1];
-              firstBoard = previousSegment.boards[previousSegment.boards.length - 1];
-            }
-
-            let firstBoardEndX = firstBoard.x + firstBoard.length;
-
-            firstBoardEndX += delta;
-
-            let currentBoardEndX = availableSegment.x + currentBoardLength;
-            firstBoardEndX = findNearBoardEndX(firstBoardEndX, currentBoardEndX);
-            currentBoardLength = firstBoardEndX - availableSegment.x;
-
-            currentBoardLength = Math.round(firstBoardEndX - availableSegment.x);
-            if (currentBoardLength <= 0) {
-              currentBoardLength = currentBoardLength + boardLength;
-            }
-
-            let boardToReuse = findBoardToReuse('left', currentBoardLength);
-            if (boardToReuse != null) {
-              currentBoardNumber = boardToReuse.number;
-              boardToReuse.reused = true;
-
-              if (boardToReuse.length > currentBoardLength) {
-                // need to cut reused board
-                availableSegment.row.remainings.push({
-                  length: boardToReuse.length - currentBoardLength, number: boardToReuse.number, cut: ['left', 'right'], reused: true
-                });
-              }
-            } else {
-              if (boardLength > currentBoardLength) {
-                // need to cut new board
-                availableSegment.row.remainings.push({
-                  length: boardLength - currentBoardLength, number: currentBoardNumber, cut: ['right'], reused: false
-                });
-              }
-            }
+          //currentBoardLength = Math.round(firstBoardEndX - availableSegment.x);
+          if (currentBoardLength <= 0) {
+            currentBoardLength = currentBoardLength + boardLength;
           }
         }
       }
     }
   }
 
-  if (availableSegment.remainingLength >= currentBoardLength) {
-    availableSegment.boards.push({
-      x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
-      y: availableSegment.y,
-      width: availableSegment.width,
-      length: currentBoardLength,
-      number: currentBoardNumber,
-      remainingLength: 0,
-      segment: availableSegment
-    });
-    availableSegment.remainingLength -= currentBoardLength;
-  } else {
-
-    let boardToReuse = findBoardToReuse('right', availableSegment.remainingLength);
-    if (boardToReuse == null) {
-      // need to cut entier board
-      const cutLength = currentBoardLength - availableSegment.remainingLength;
+  if (arrangeModeSelect.value === 'continue') {
+    if (availableSegment.remainingLength >= currentBoardLength) {
       availableSegment.boards.push({
         x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
         y: availableSegment.y,
         width: availableSegment.width,
-        length: availableSegment.remainingLength,
+        length: currentBoardLength,
         number: currentBoardNumber,
-        remainingLength: 0,
         segment: availableSegment
       });
-      availableSegment.remainingLength = 0;
-
-      availableSegment.row.remainings.push({
-        length: cutLength, number: currentBoardNumber, cut: ['left'], reused: false
-      });
+      availableSegment.remainingLength -= currentBoardLength;
     } else {
-      // need to cut reused board
-      boardToReuse.reused = true;
+      let boardToReuse = findBoardToReuse('right', availableSegment.remainingLength);
+      if (boardToReuse == null) {
+        // need to cut entier board
+        const cutLength = currentBoardLength - availableSegment.remainingLength - cutWidth;
+        availableSegment.boards.push({
+          x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+          y: availableSegment.y,
+          width: availableSegment.width,
+          length: availableSegment.remainingLength,
+          number: currentBoardNumber,
+          segment: availableSegment
+        });
+        availableSegment.remainingLength = 0;
 
-      const cutLength = boardToReuse.length - availableSegment.remainingLength;
-      availableSegment.boards.push({
-        x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
-        y: availableSegment.y,
-        width: availableSegment.width,
-        length: availableSegment.remainingLength,
-        number: boardToReuse.number,
-        remainingLength: 0,
-        segment: availableSegment
-      });
-      availableSegment.remainingLength = 0;
+        availableSegment.row.remainings.push({
+          length: cutLength, number: currentBoardNumber, cut: ['left'], reused: false
+        });
+      } else {
+        // need to cut reused board
+        boardToReuse.reused = true;
+        const cutLength = boardToReuse.length - availableSegment.remainingLength - cutWidth;
+        availableSegment.boards.push({
+          x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+          y: availableSegment.y,
+          width: availableSegment.width,
+          length: availableSegment.remainingLength,
+          number: boardToReuse.number,
+          segment: availableSegment
+        });
+        availableSegment.remainingLength = 0;
 
-      availableSegment.row.remainings.push({
-        length: cutLength, number: boardToReuse.number, cut: ['right', 'left'], reused: true
-      });
+        availableSegment.row.remainings.push({
+          length: cutLength, number: boardToReuse.number, cut: ['right', 'left'], reused: true
+        });
+      }
+    }
+  } else {
+    if (currentBoardLength === boardLength) {
+      // add full board
+      if (availableSegment.remainingLength >= currentBoardLength) {
+        // All good, add board
+        availableSegment.boards.push({
+          x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+          y: availableSegment.y,
+          width: availableSegment.width,
+          length: currentBoardLength,
+          number: currentBoardNumber,
+          segment: availableSegment
+        });
+        availableSegment.remainingLength -= currentBoardLength;
+      } else {
+        // Not enough space, add gap
+        availableSegment.gaps.push({
+          x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+          y: availableSegment.y,
+          width: availableSegment.width,
+          length: availableSegment.remainingLength,
+          type: 'right',
+          completed : false,
+          segment: availableSegment
+        });
+        availableSegment.remainingLength = 0;
+      }
+    } else {
+      // add full board
+      if (availableSegment.remainingLength >= currentBoardLength) {
+        // not a full board needs to add.
+        availableSegment.gaps.push({
+          x: availableSegment.x,
+          y: availableSegment.y,
+          width: availableSegment.width,
+          length: Math.min(availableSegment.remainingLength, currentBoardLength),
+          type: 'left',
+          completed : false,
+          segment: availableSegment
+        });
+        availableSegment.remainingLength -= currentBoardLength;
+      } else {
+        // Not enough space, add gap
+        availableSegment.gaps.push({
+          x: availableSegment.x + availableSegment.length - availableSegment.remainingLength,
+          y: availableSegment.y,
+          width: availableSegment.width,
+          length: availableSegment.remainingLength,
+          type: 'right',
+          completed : false,
+          segment: availableSegment
+        });
+        availableSegment.remainingLength = 0;
+      }
     }
   }
   return true;
 }
 
 
+function completeNewGap() {
+  console.log("Find last not completed row and segment")
+  if (rows.length === 0) {
+    alert('Please add at least one row.');
+    throw new Error('Please add at least one row.');
+  }
+
+  const notCompletedGap = findNotCompletedGap();
+  if (notCompletedGap == null) {
+    return false;
+  }
+  // Get a full board
+  // Cut it to complete the gap
+  // find another gap that can be completed by remaining part of the board
+
+  let nextBoardNumber = findMaxBoardNumber() + 1;
+
+  let remainingBoardLength = boardLength - notCompletedGap.length - cutWidth;
+  notCompletedGap.segment.boards.push({
+    x: notCompletedGap.x,
+    y: notCompletedGap.y,
+    width: notCompletedGap.width,
+    length: notCompletedGap.length,
+    number: nextBoardNumber,
+    segment: notCompletedGap.segment
+  });
+  notCompletedGap.completed = true;
+
+  const gap = findMaxGapToCompleteTheLength(notCompletedGap.type === 'right' ? 'left': 'right', remainingBoardLength);
+  if (gap == null) {
+    //console.log("There is no gap to complete the length");
+    notCompletedGap.segment.row.remainings.push({
+      length: remainingBoardLength, number: nextBoardNumber, cut: ['right'], reused: false
+    });
+  } else {
+    //console.log("Found gap to complete the length");
+    gap.segment.boards.push({
+      x: gap.x,
+      y: gap.y,
+      width: gap.width,
+      length: gap.length,
+      number: nextBoardNumber,
+      segment: gap.segment
+    });
+    gap.completed = true;
+    const remainingLength = remainingBoardLength - gap.length - cutWidth;
+    if (remainingLength > 0) {
+      gap.segment.row.remainings.push({
+        length: remainingLength, number: nextBoardNumber, cut: ['right', 'left'], reused: true
+      });
+    }
+  }
+
+
+
+
+  return true;
+}
 
 function updateStatistics() {
   let maxNumberOfBoards = findMaxBoardNumber();

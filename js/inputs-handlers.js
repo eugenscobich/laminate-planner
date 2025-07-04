@@ -118,12 +118,20 @@ minBoardLengthInput.addEventListener('change', () => {
   update();
 })
 
+cutWidthInput.addEventListener('change', () => {
+  update();
+})
+
 addRowButton.addEventListener('click', function () {
   computeRow();
 });
 
 addBoardButton.addEventListener('click', function () {
   computeBord();
+});
+
+completeGapButton.addEventListener('click', function () {
+  completeGap();
 });
 
 fullCompleteButton.addEventListener('click', function () {
