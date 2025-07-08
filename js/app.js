@@ -302,9 +302,7 @@ function findMaxGapToCompleteTheLength(type, length) {
       }
     }
   }
-  gaps.sort((a, b) => {
-    a.length - b.length
-  });
+  gaps.sort((a, b) => b.length - a.length);
   for (let i = 0; i < gaps.length; i++) {
     const gap = gaps[i];
     if (gap.length <= length) {
